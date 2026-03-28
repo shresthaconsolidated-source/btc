@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#a78bfa"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="DI Tracker"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="/icon-192.png"/>
+  <title>⚡ Crypto DI Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#080810; --card:#111120; --border:#1a1a30; --border2:#22223a;
+      --text:#e2e8f0; --muted:#64748b;
+      --green:#34d399; --red:#f87171; --yellow:#fbbf24; --purple:#a78bfa; --blue:#60a5fa;
+    }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; font-size:13px; }
+
+    /* TOP BAR */
+    .topbar {
+      position:sticky; top:0; z-index:100; background:rgba(8,8,16,0.96);
+      backdrop-filter:blur(12px); border-bottom:1px solid var(--border);
+      padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:54px;
+    }
+    .logo { font-size:15px; font-weight:700; background:linear-gradient(90deg,var(--purple),var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .price-pills { display:flex; gap:8px; }
+    .pill { background:var(--card); border:1px solid var(--border2); border-radius:10px; padding:5px 16px; display:flex; align-items:center; gap:10px; }
+    .pill-sym { font-size:10px; font-weight:700; letter-spacing:1px; color:var(--muted); }
+    .pill-price { font-size:15px; font-weight:700; }
+    .topbar-right { display:flex; gap:8px; align-items:center; }
+    .tick { font-size:10px; color:var(--muted); }
+    .btn { background:var(--card); border:1px solid var(--border2); color:var(--muted); padding:6px 12px; border-radius:7px; cursor:pointer; font-size:11.5px; font-family:inherit; display:flex; align-items:center; gap:5px; transition:all .2s; }
+    .btn:hover { background:var(--border2); color:var(--text); }
+    .btn.spin svg { animation:spin .9s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* MAIN */
+    .main { padding:18px 24px; display:grid; grid-template-columns:310px 1fr; gap:14px; max-width:1400px; margin:0 auto; }
+    .left { display:flex; flex-direction:column; gap:14px; }
+    .right { display:flex; flex-direction:column; gap:14px; }
+
+    /* CARD */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:13px; padding:16px; }
+    .card-title { font-size:10px; font-weight:600; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; margin-bottom:14px; }
+
+    /* METRIC */
+    .mrow { display:flex; justify-content:space-between; align-items:flex-start; padding:6px 0; border-bottom:1px solid #0d0d1a; }
+    .mrow:last-child { border-bottom:none; }
+    .mlabel { color:var(--muted); font-size:12px; line-height:1.4; }
+    .mval-wrap { text-align:right; }
+    .mval { font-weight:600; font-size:12.5px; display:block; }
+    .msub { font-size:10.5px; color:var(--muted); display:block; margin-top:1px; }
+    .pos{color:var(--green)} .neg{color:var(--red)} .gold{color:var(--yellow)}
+
+    /* DIVIDER */
+    .mdiv { height:1px; background:var(--border); margin:10px 0; }
+
+    /* RECS */
+    .rec { border-radius:9px; padding:9px 12px; margin-bottom:7px; font-size:12px; line-height:1.6; border-left:3px solid; }
+    .rec:last-child{margin-bottom:0}
+    .rec-ACCUMULATE{background:rgba(52,211,153,.06);border-color:var(--green)}
+    .rec-SELL_BOX{background:rgba(251,191,36,.06);border-color:var(--yellow)}
+    .rec-SELL_ZONE{background:rgba(248,113,113,.08);border-color:var(--red)}
+    .rec-HOLD{background:rgba(100,116,139,.05);border-color:var(--muted)}
+    .rec-coin{font-size:9.5px;font-weight:700;letter-spacing:.5px;margin-bottom:2px;color:var(--muted)}
+
+    /* TABLE */
+    .tbl-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:11.5px}
+    th{text-align:left;padding:7px 10px;font-size:9.5px;font-weight:600;letter-spacing:.7px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+    tr{border-bottom:1px solid #0d0d1a;transition:background .15s}
+    tr:last-child{border-bottom:none} tbody tr:hover{background:#13131f}
+    td{padding:7px 10px;white-space:nowrap}
+    .tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:600}
+    .tag-BTC{background:rgba(251,191,36,.1);color:var(--yellow)}
+    .tag-ETH{background:rgba(167,139,250,.1);color:var(--purple)}
+    .tag-USDT{background:rgba(52,211,153,.1);color:var(--green)}
+    .tag-Buy{background:rgba(52,211,153,.09);color:var(--green)}
+    .tag-Sell{background:rgba(248,113,113,.09);color:var(--red)}
+    .sell-row td{opacity:.45}
+
+    /* ACCUM */
+    .accum{background:rgba(52,211,153,.04);border:1px solid rgba(52,211,153,.15);border-radius:9px;padding:10px 13px;font-size:12px;color:#6ee7b7}
+    .err-banner{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:9px;padding:10px 13px;color:var(--red);font-size:12px;line-height:1.6}
+    /* ── MOBILE ───────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .topbar {
+        flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 8px;
+      }
+      .price-pills {
+        order: 3; width: 100%; justify-content: space-between;
+      }
+      .pill { flex: 1; justify-content: center; }
+      .pill-price { font-size: 13px; }
+      .pill-chg { display: none; }
+      .main {
+        grid-template-columns: 1fr;
+        padding: 10px 12px;
+      }
+      .left, .right { gap: 10px; }
+      .card { padding: 14px 12px; }
+      .card-title { margin-bottom: 10px; }
+      .mval { font-size: 12px; }
+      th { font-size: 9px; padding: 6px 7px; }
+      td { padding: 6px 7px; font-size: 11px; }
+      .btn { padding: 8px 12px; font-size: 12px; }
+      .rec { font-size: 11.5px; }
+    }
+    @media (max-width: 400px) {
+      .pill-price { font-size: 12px; }
+      .logo { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">⚡ DI Tracker</div>
+  <div class="price-pills">
+    <div class="pill"><span class="pill-sym">BTC</span><span class="pill-price" id="btc-p">⋯</span></div>
+    <div class="pill"><span class="pill-sym">ETH</span><span class="pill-price" id="eth-p">⋯</span></div>
+  </div>
+  <div class="topbar-right">
+    <span class="tick" id="tick"></span>
+    <button class="btn" id="rbtn" onclick="loadAll()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
+      </svg>
+      Refresh
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="left">
+
+    <!-- Portfolio Value -->
+    <div class="card">
+      <div class="card-title">💼 Portfolio Value</div>
+      <div class="mrow">
+        <span class="mlabel">Total Value</span>
+        <div class="mval-wrap"><span class="mval" id="v-total">—</span></div>
+      </div>
+      <div class="mrow">
+        <span class="mlabel">BTC Holdings</span>
+        <div class="mval-wrap">
+          <span class="mval" id="v-btc-coins">—</span>
+          <span class="msub" id="v-btc-usd">—</span>
+        </div>
+      </div>
+      <div class="mrow">
+        <span class="mlabel">ETH Holdings</span>
+        <div class="mval-wrap">
+          <span class="mval" id="v-eth-coins">—</span>
+          <span class="msub" id="v-eth-usd">—</span>
+        </div>
+      </div>
+      <div class="mrow">
+        <span class="mlabel">USDT Locked (in DI)</span>
+        <div class="mval-wrap"><span class="mval" id="v-usdt">—</span></div>
+      </div>
+      <div class="mdiv"></div>
+      <div class="mrow">
+        <span class="mlabel">Fresh Capital Invested</span>
+        <div class="mval-wrap"><span class="mval" id="v-inv">—</span></div>
+      </div>
+      <div class="mrow">
+        <span class="mlabel">APR Reinvested</span>
+        <div class="mval-wrap"><span class="mval" style="color:var(--purple)" id="v-apr-reinvested">—</span></div>
+      </div>
+      <div class="mrow">
+        <span class="mlabel">Capital Gain / Loss</span>
+        <div class="mval-wrap"><span class="mval" id="v-gain">—</span><span class="msub" style="color:var(--muted)">on fresh capital only</span></div>
+      </div>
+      <div class="mrow">
+        <span class="mlabel">CAGR (annualized)</span>
+        <div class="mval-wrap"><span class="mval gold" id="v-cagr">—</span></div>
+      </div>
+    </div>
+
+    <!-- APR / Yield -->
+    <div class="card">
+      <div class="card-title">📈 APR Earned</div>
+      <div class="mrow">
+        <span class="mlabel">In USDT</span>
+        <div class="mval-wrap"><span class="mval pos" id="v-apru">—</span></div>
+      </div>
+      <div class="mrow">
+        <span class="mlabel">In ETH</span>
+        <div class="mval-wrap">
+          <span class="mval pos" id="v-apre-coins">—</span>
+          <span class="msub pos" id="v-apre-usd">—</span>
+        </div>
+      </div>
+      <div class="mrow">
+        <span class="mlabel">In BTC</span>
+        <div class="mval-wrap">
+          <span class="mval pos" id="v-aprb-coins">—</span>
+          <span class="msub pos" id="v-aprb-usd">—</span>
+        </div>
+      </div>
+      <div class="mdiv"></div>
+      <div class="mrow">
+        <span class="mlabel">Total APR Value</span>
+        <div class="mval-wrap"><span class="mval pos" id="v-apr-total">—</span></div>
+      </div>
+    </div>
+
+    <!-- Accumulate banners -->
+    <div id="accum-area"></div>
+    <div id="err-area"></div>
+
+  </div>
+  <div class="right">
+
+    <!-- Recommendations -->
+    <div class="card">
+      <div class="card-title">🎯 Recommendations</div>
+      <div id="rec-area"><div style="color:var(--muted)">Loading…</div></div>
+    </div>
+
+    <!-- Monthly CAGR -->
+    <div class="card">
+      <div class="card-title">📅 Monthly Performance</div>
+      <div id="monthly-area"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+    </div>
+
+    <!-- Box Ledger -->
+    <div class="card">
+      <div class="card-title">📦 Box Ledger <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0;text-transform:none">— Sell rows dimmed, excluded from totals</span></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Name</th><th>Coin</th><th>Type</th>
+            <th>Invested</th><th>Entry $</th><th>Units</th><th>Days</th>
+            <th>APR%</th><th>HIT</th><th>APR (USDT)</th><th>Active (USDT)</th>
+            <th>Coins Held</th><th>Current Val</th>
+          </tr></thead>
+          <tbody id="tbl-body">
+            <tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────
+const CSV_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSH10A_YCWi6ma_qnaPTbmArt_Py5-rsZlQoz7sbESvvtzFXaWd_NtWcz0mbK6-r3lxi8Wiw5cB-JQO/pub?gid=2147348469&single=true&output=csv";
+
+const BTC_BELOW = 60000, BTC_ABOVE = 130000;
+const ETH_BELOW = 1500,  ETH_ABOVE = 5000;
+
+// ── STATE ─────────────────────────────────────────────────────
+let _allBoxes = [];   // all rows including Sell
+let _btc = 0, _eth = 0;
+
+// ── INIT ──────────────────────────────────────────────────────
+loadAll();
+setInterval(loadAll, 60000);
+
+async function loadAll() {
+  const btn = document.getElementById('rbtn');
+  btn.classList.add('spin');
+  await fetchCSV();
+  render();
+  document.getElementById('tick').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  btn.classList.remove('spin');
+}
+
+// ── FETCH & PARSE CSV ─────────────────────────────────────────
+async function fetchCSV() {
+  try {
+    const r = await fetch(CSV_URL, { signal: AbortSignal.timeout(12000) });
+    const text = await r.text();
+    parseAll(text);
+  } catch(e) { console.error('CSV fetch failed:', e); }
+}
+
+function parseAll(text) {
+  const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return;
+
+  _allBoxes = [];
+  _btc = 0; _eth = 0;
+
+  // lines[0] = header row, lines[1..] = data rows
+  lines.slice(1).forEach(line => {
+    const c = splitCSV(line);
+
+    // Extract prices from col P (idx 15) and Q (idx 16)
+    const label = clean(c[15]).toUpperCase();
+    const priceVal = num(c[16]);
+    if (label === 'BTC' && priceVal > 0) _btc = priceVal;
+    if (label === 'ETH' && priceVal > 0) _eth = priceVal;
+
+    // Parse box data
+    const name   = clean(c[1]);
+    const crypto = clean(c[2]).toUpperCase();
+    if (!name || !['BTC','ETH','USDT'].includes(crypto)) return;
+
+    _allBoxes.push({
+      date:       clean(c[0]),
+      name,
+      crypto,
+      type:       clean(c[3]),           // Buy / Sell
+      amountUSDT: num(c[4]),             // E - amount invested in USDT
+      entryPrice: num(c[5]),             // F - target price
+      units:      num(c[6]),             // G - coins
+      days:       Math.max(1, int(c[7])),
+      aprPct:     pct(c[8]),             // I - APR %
+      hit:        clean(c[9]).toUpperCase() === 'TRUE',
+      aprUSDT:    num(c[10]),            // K - APR earned in USDT
+      aprCoin:    num(c[11]),            // L - APR earned in coin
+      activeInv:  num(c[12]),            // M - active inventory in USDT
+      aprFunded:  clean(c[13]).toUpperCase() === 'TRUE', // N - was this funded by APR earnings?
+    });
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render() {
+  // Prices in top bar
+  document.getElementById('btc-p').textContent = _btc ? '$' + f(_btc) : '—';
+  document.getElementById('eth-p').textContent = _eth ? '$' + f(_eth) : '—';
+
+  // Split: Buy rows only for portfolio, all rows for table
+  const buys = _allBoxes.filter(b => b.type.toLowerCase() === 'buy');
+
+  // ── Totals ──────────────────────────────────────────────────
+  // Split: fresh money from pocket vs APR earnings reinvested
+  const freshCapital   = buys.filter(b => !b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
+  const aprReinvested  = buys.filter(b =>  b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
+  const totalInvested  = freshCapital; // capital gain/CAGR based on fresh money only
+
+  // ── APR from ALL rows (Buy, Sell, APR-funded — everything earns APR) ──
+  let aprUSDT = 0, aprBTCcoins = 0, aprETHcoins = 0;
+  _allBoxes.forEach(b => {
+    aprUSDT += b.aprUSDT;
+    if (b.crypto === 'BTC') aprBTCcoins += b.aprCoin;
+    if (b.crypto === 'ETH') aprETHcoins += b.aprCoin;
+  });
+
+  let btcCoins = 0, btcUSD = 0;
+  let ethCoins = 0, ethUSD = 0;
+  let usdtLocked = 0;
+  let firstDate = null;
+
+  buys.forEach(b => {
+    if (b.activeInv > 0 && b.entryPrice > 0) {
+      // Settled position — active inventory is in USDT, convert to coins
+      const coins = b.activeInv / b.entryPrice;
+      if (b.crypto === 'BTC') {
+        btcCoins += coins;
+        btcUSD   += coins * (_btc || b.entryPrice);
+      } else if (b.crypto === 'ETH') {
+        ethCoins += coins;
+        ethUSD   += coins * (_eth || b.entryPrice);
+      }
+    } else if (!b.hit && b.amountUSDT > 0) {
+      // Still running — USDT is locked in DI, count as USDT holding
+      usdtLocked += b.amountUSDT;
+    }
+
+    // Earliest date for CAGR
+    if (b.date) {
+      const d = new Date(b.date);
+      if (!firstDate || d < firstDate) firstDate = d;
+    }
+  });
+
+  // APR in USD terms
+  const aprBTCusd  = aprBTCcoins * (_btc || 0);
+  const aprETHusd  = aprETHcoins * (_eth || 0);
+  const aprTotalUSD = aprUSDT + aprBTCusd + aprETHusd;
+
+  // Total value = all current holdings + USDT locked in DI + APR in USDT
+  const totalValue = btcUSD + ethUSD + usdtLocked + aprUSDT;
+
+  // Capital gain = current total - what was invested
+  const capGain = totalValue - totalInvested;
+
+  // CAGR
+  let cagr = 0;
+  if (firstDate && totalInvested > 0 && totalValue > 0) {
+    const days = Math.max(1, (Date.now() - firstDate.getTime()) / 86400000);
+    const ratio = totalValue / totalInvested;
+    if (ratio > 0) cagr = (Math.pow(ratio, 365 / days) - 1) * 100;
+  }
+
+  // ── Left Panel ───────────────────────────────────────────────
+  setText('v-total',          '$' + fd(totalValue),      '');
+  setText('v-btc-coins',      btcCoins.toFixed(6) + ' BTC', '');
+  setText('v-btc-usd',        '≈ $' + fd(btcUSD),         '');
+  setText('v-eth-coins',      ethCoins.toFixed(4) + ' ETH', '');
+  setText('v-eth-usd',        '≈ $' + fd(ethUSD),         '');
+  setText('v-usdt',           '$' + fd(usdtLocked),       '');
+  setText('v-inv',            '$' + fd(freshCapital),     '');
+  setText('v-apr-reinvested', aprReinvested > 0 ? '+$' + fd(aprReinvested) : '$0.00', '');
+  setText('v-gain',           (capGain >= 0 ? '+$' : '-$') + fd(Math.abs(capGain)), capGain >= 0 ? 'pos' : 'neg');
+  setText('v-cagr',           cagr.toFixed(1) + '%',    cagr >= 0 ? 'gold' : 'neg');
+
+  // APR panel
+  setText('v-apru',        '+$' + fd(aprUSDT),          'pos');
+  setText('v-apre-coins',  '+' + aprETHcoins.toFixed(6) + ' ETH', 'pos');
+  setText('v-apre-usd',    '≈ $' + fd(aprETHusd),        'pos');
+  setText('v-aprb-coins',  '+' + aprBTCcoins.toFixed(8) + ' BTC', 'pos');
+  setText('v-aprb-usd',    '≈ $' + fd(aprBTCusd),        'pos');
+  setText('v-apr-total',   '+$' + fd(aprTotalUSD),       'pos');
+
+  // Accumulate banners (Buy rows only, below threshold, still active)
+  const accBtc = buys.filter(b => b.crypto==='BTC' && b.entryPrice < BTC_BELOW && b.activeInv > 0);
+  const accEth = buys.filter(b => b.crypto==='ETH' && b.entryPrice < ETH_BELOW && b.activeInv > 0);
+  let acc = '';
+  if (accBtc.length) acc += `<div class="accum" style="margin-bottom:10px">🧺 <b>Accumulate BTC</b> — ${accBtc.length} box(es) avg entry $${f(avg(accBtc.map(b=>b.entryPrice)))}<br><span style="font-size:10px;color:#4ade80">Hold until BTC &gt; $${f(BTC_ABOVE)}</span></div>`;
+  if (accEth.length) acc += `<div class="accum">🧺 <b>Accumulate ETH</b> — ${accEth.length} box(es) avg entry $${f(avg(accEth.map(b=>b.entryPrice)))}<br><span style="font-size:10px;color:#4ade80">Hold until ETH &gt; $${f(ETH_ABOVE)}</span></div>`;
+  document.getElementById('accum-area').innerHTML = acc;
+
+  // Errors
+  let errs = '';
+  if (!_btc && !_eth) errs += `<div class="err-banner">⚠️ Prices not in sheet yet — add GOOGLEFINANCE formulas to P/Q columns, or click Refresh.</div>`;
+  if (!_allBoxes.length) errs += `<div class="err-banner" style="margin-top:8px">⚠️ No boxes loaded from sheet. Check the CSV URL is still published.</div>`;
+  document.getElementById('err-area').innerHTML = errs;
+
+  // Recommendations (Buy boxes only, cycling zone)
+  const recs = buildRecs(buys, _btc, _eth);
+  document.getElementById('rec-area').innerHTML = recs.length
+    ? recs.map(r => `<div class="rec rec-${r.type}"><div class="rec-coin">${r.crypto}</div>${r.msg}</div>`).join('')
+    : `<div style="color:var(--muted);font-size:12px">Add boxes to your sheet to see recommendations.</div>`;
+
+  // Monthly performance
+  renderMonthly(freshCapital, firstDate);
+
+  // Box table — ALL rows, Sell rows dimmed
+  document.getElementById('tbl-body').innerHTML = _allBoxes.length
+    ? _allBoxes.map(b => {
+        const isSell = b.type.toLowerCase() === 'sell';
+        const cur    = b.crypto === 'BTC' ? _btc : (_eth || 0);
+        const coins  = (b.activeInv > 0 && b.entryPrice > 0) ? b.activeInv / b.entryPrice : 0;
+        const curVal = coins * cur;
+        const aprBadge = b.aprFunded ? ' <span style="font-size:9px;background:rgba(167,139,250,.15);color:var(--purple);padding:1px 5px;border-radius:3px;font-weight:600">APR</span>' : '';
+        return `<tr class="${isSell ? 'sell-row' : ''}">
+          <td style="color:var(--muted)">${b.date}</td>
+          <td><b>${b.name}</b>${aprBadge}</td>
+          <td><span class="tag tag-${b.crypto}">${b.crypto}</span></td>
+          <td><span class="tag tag-${b.type}">${b.type}</span></td>
+          <td>${isSell ? '<span style="color:#2d3350">—</span>' : (b.aprFunded ? '<span style="color:var(--purple)">APR</span>' : '$'+fd(b.amountUSDT))}</td>
+          <td>$${f(b.entryPrice)}</td>
+          <td style="color:var(--muted)">${b.units.toFixed(6)}</td>
+          <td style="color:var(--muted)">${b.days}d</td>
+          <td style="color:var(--yellow)">${b.aprPct.toFixed(0)}%</td>
+          <td>${b.hit ? '<span style="color:var(--green);font-size:14px">✓</span>' : '<span style="color:#2d3350;font-size:14px">○</span>'}</td>
+          <td class="pos">${b.aprUSDT > 0 ? '+$'+fd(b.aprUSDT) : (b.aprCoin > 0 ? '+'+b.aprCoin.toFixed(6)+' '+b.crypto : '+$0.00')}</td>
+          <td style="color:var(--muted)">$${f(b.activeInv)}</td>
+          <td style="color:var(--muted)">${coins > 0 ? coins.toFixed(6) : '—'}</td>
+          <td class="${curVal > 0 ? (curVal >= b.amountUSDT ? 'pos' : 'neg') : ''}">${curVal > 0 ? '$'+f(curVal) : '—'}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">No data found in sheet.</td></tr>`;
+}
+
+// ── RECOMMENDATION ENGINE ─────────────────────────────────────
+function buildRecs(buys, btcP, ethP) {
+  const recs = [];
+  [[btcP,'BTC',BTC_BELOW,BTC_ABOVE],[ethP,'ETH',ETH_BELOW,ETH_ABOVE]].forEach(([price,coin,below,above]) => {
+    if (!price) { recs.push({type:'HOLD',crypto:coin,msg:'Price not available in sheet yet.'}); return; }
+    if (price < below) { recs.push({type:'ACCUMULATE',crypto:coin,msg:`@ $${f(price)} — below $${f(below)}. 🟢 Buy more in Dual Investment.`}); return; }
+    if (price > above) { recs.push({type:'SELL_ZONE',crypto:coin,msg:`🔴 @ $${f(price)} — above $${f(above)}! Sell 1% per ${coin==='BTC'?'$1k':'$100'} rise.`}); return; }
+    const elig = buys.filter(b => b.crypto===coin && b.entryPrice>=below && b.activeInv>0 && price>=b.entryPrice);
+    if (!elig.length) { recs.push({type:'HOLD',crypto:coin,msg:`@ $${f(price)} — cycling zone. No boxes at or above current price yet.`}); return; }
+    elig.forEach(b => recs.push({type:'SELL_BOX',crypto:coin,
+      msg:`📦 <b>${b.name}</b> — Entry $${f(b.entryPrice)} (+${((price-b.entryPrice)/b.entryPrice*100).toFixed(1)}%). ✅ Place Sell DI @ $${f(b.entryPrice*1.01)}.`
+    }));
+  });
+  return recs;
+}
+
+// ── MONTHLY PERFORMANCE ───────────────────────────────────────
+function renderMonthly(freshCapital, firstDate) {
+  const el = document.getElementById('monthly-area');
+  if (!_allBoxes.length || !firstDate) { el.innerHTML = '<div style="color:var(--muted);font-size:12px">No data yet.</div>'; return; }
+
+  // Bucket APR by YYYY-MM from ALL rows
+  const monthly = {};
+  _allBoxes.forEach(b => {
+    if (!b.date) return;
+    const d   = new Date(b.date);
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    if (!monthly[key]) monthly[key] = { aprUSDT:0, aprBTC:0, aprETH:0 };
+    monthly[key].aprUSDT += b.aprUSDT;
+    monthly[key].aprBTC  += b.crypto==='BTC' ? b.aprCoin : 0;
+    monthly[key].aprETH  += b.crypto==='ETH' ? b.aprCoin : 0;
+  });
+
+  const keys = Object.keys(monthly).sort();
+  let cumAPRusd = 0;
+  const startTime = firstDate.getTime();
+
+  const rows = keys.map(key => {
+    const m = monthly[key];
+    const aprUSD = m.aprUSDT + m.aprBTC*(_btc||0) + m.aprETH*(_eth||0);
+    cumAPRusd += aprUSD;
+
+    // CAGR as of end of that month
+    const [yr, mo] = key.split('-').map(Number);
+    const monthEnd    = new Date(yr, mo, 0).getTime(); // last day of month
+    const daysElapsed = Math.max(1, (Math.min(monthEnd, Date.now()) - startTime) / 86400000);
+    const ratio = freshCapital > 0 ? (freshCapital + cumAPRusd) / freshCapital : 1;
+    const cagr  = (Math.pow(ratio, 365/daysElapsed) - 1) * 100;
+    const cagrCls = cagr >= 0 ? 'pos' : 'neg';
+    const label = new Date(yr, mo-1, 1).toLocaleString('default', {month:'short', year:'2-digit'});
+    return `<tr>
+      <td style="color:var(--muted)">${label}</td>
+      <td class="pos">+$${fd(aprUSD)}</td>
+      <td style="color:var(--muted)">$${fd(cumAPRusd)}</td>
+      <td class="${cagrCls}">${cagr.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `<table>
+    <thead><tr>
+      <th>Month</th><th>APR This Month</th><th>Cumul. APR</th><th>CAGR (to date)</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ── CSV helpers ───────────────────────────────────────────────
+
+function splitCSV(line) {
+  const r = []; let cur = '', inQ = false;
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; continue; }
+    if (ch === ',' && !inQ) { r.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  r.push(cur); return r;
+}
+function clean(v)  { return (v||'').trim().replace(/^"|"$/g,''); }
+function num(v)    { return parseFloat(clean(v).replace(/[$,\s]/g,'')) || 0; }
+function int(v)    { return parseInt(clean(v)) || 0; }
+function pct(v)    { const s=clean(v).replace(/[$\s]/g,''); return s.endsWith('%') ? parseFloat(s)||0 : parseFloat(s)||0; }
+
+// ── Display helpers ───────────────────────────────────────────
+function f(n)  { if (!n && n!==0) return '—'; return Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function f2(n) { if (!n && n!==0) return '—'; return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+// Always 2 decimal places for dollar values
+function fd(n) { if (n==null||isNaN(n)) return '—'; return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function avg(a){ return a.length ? a.reduce((s,v)=>s+v,0)/a.length : 0; }
+function setText(id, text, cls) {
+  const el = document.getElementById(id); if (!el) return;
+  el.innerHTML = text;
+  if (cls !== undefined) el.className = cls ? cls : '';
+}
+
+// ── PWA: Register Service Worker ──────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
