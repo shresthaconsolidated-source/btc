@@ -353,20 +353,24 @@ function parseAll(text) {
     const crypto = clean(c[2]).toUpperCase();
     if (!name || !['BTC','ETH','USDT'].includes(crypto)) return;
 
-    _allBoxes.push({
-      date:       clean(c[0]),
-      name,
-      crypto,
-      type:       clean(c[3]),           // Buy / Sell
-      amountUSDT: num(c[4]),             // E - amount invested in USDT
-      entryPrice: num(c[5]),             // F - target price
-      units:      num(c[6]),             // G - coins
-      days:       Math.max(1, int(c[7])),
-      aprPct:     pct(c[8]),             // I - APR %
-      hit:        clean(c[9]).toUpperCase() === 'TRUE',
-      refunded:   clean(c[9]).toUpperCase() === 'X', // X means box finished but didn't hit, capital returned
-      aprUSDT:    num(c[10]),            // K - APR earned in USDT
-      aprCoin:    num(c[11]),            // L - APR earned in coin
+      const rawHit = clean(c[9]).toUpperCase();
+      const isRunning = rawHit === '';
+
+      _allBoxes.push({
+        date:       clean(c[0]),
+        name,
+        crypto,
+        type:       clean(c[3]),           // Buy / Sell
+        amountUSDT: num(c[4]),             // E - amount invested in USDT
+        entryPrice: num(c[5]),             // F - target price
+        units:      num(c[6]),             // G - coins
+        days:       Math.max(1, int(c[7])),
+        aprPct:     pct(c[8]),             // I - APR %
+        hit:        rawHit === 'YES',      // Dropdown Yes = Hit
+        refunded:   rawHit === 'NO',       // Dropdown No  = Finished but didn't hit (Refunded)
+        // If box is still running (Blank), do not accrue APR yet
+        aprUSDT:    isRunning ? 0 : num(c[10]),
+        aprCoin:    isRunning ? 0 : num(c[11]),
       activeInv:  num(c[12]),            // M - active inventory in USDT
       aprFunded:  clean(c[13]).toUpperCase() === 'TRUE', // N - was this funded by APR earnings?
     });
