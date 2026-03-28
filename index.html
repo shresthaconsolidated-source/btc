@@ -316,23 +316,10 @@ setInterval(loadAll, 60000);
 async function loadAll() {
   const btn = document.getElementById('rbtn');
   btn.classList.add('spin');
-  await Promise.all([fetchCSV(), fetchBinance()]);
+  await fetchCSV();
   render();
   document.getElementById('tick').textContent = 'Updated ' + new Date().toLocaleTimeString();
   btn.classList.remove('spin');
-}
-
-async function fetchBinance() {
-  try {
-    const [b, e] = await Promise.all([
-      fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').then(r=>r.json()),
-      fetch('https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT').then(r=>r.json())
-    ]);
-    if (b && b.price) _btc = parseFloat(b.price);
-    if (e && e.price) _eth = parseFloat(e.price);
-  } catch(err) {
-    console.error('Binance API failed:', err);
-  }
 }
 
 // ── FETCH & PARSE CSV ─────────────────────────────────────────
@@ -349,10 +336,17 @@ function parseAll(text) {
   if (lines.length < 2) return;
 
   _allBoxes = [];
+  _btc = 0; _eth = 0;
 
   // lines[0] = header row, lines[1..] = data rows
   lines.slice(1).forEach(line => {
     const c = splitCSV(line);
+
+    // Extract prices from col Q (idx 16) and R (idx 17)
+    const label = clean(c[16]).toUpperCase();
+    const priceVal = num(c[17]);
+    if (label === 'BTC' && priceVal > 0) _btc = priceVal;
+    if (label === 'ETH' && priceVal > 0) _eth = priceVal;
 
     // Parse box data
     const name   = clean(c[1]);
@@ -484,7 +478,7 @@ function render() {
 
   // Errors
   let errs = '';
-  if (!_btc && !_eth) errs += `<div class="err-banner">⚠️ Live prices not loaded yet — Unable to connect to Binance API. Check your internet or ad-blocker, and click Refresh.</div>`;
+  if (!_btc && !_eth) errs += `<div class="err-banner">⚠️ Prices not in sheet yet — Make sure formulas are in Q/R columns and click Refresh.</div>`;
   if (!_allBoxes.length) errs += `<div class="err-banner" style="margin-top:8px">⚠️ No boxes loaded from sheet. Check the CSV URL is still published.</div>`;
   document.getElementById('err-area').innerHTML = errs;
 
