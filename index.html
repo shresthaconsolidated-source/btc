@@ -325,7 +325,7 @@ async function loadAll() {
 // ── FETCH & PARSE CSV ─────────────────────────────────────────
 async function fetchCSV() {
   try {
-    const r = await fetch(CSV_URL, { signal: AbortSignal.timeout(12000) });
+    const r = await fetch(CSV_URL + '&_r=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(12000) });
     const text = await r.text();
     parseAll(text);
   } catch(e) { console.error('CSV fetch failed:', e); }
