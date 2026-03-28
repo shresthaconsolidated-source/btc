@@ -484,7 +484,7 @@ function render() {
 
   // Errors
   let errs = '';
-  if (!_btc && !_eth) errs += `<div class="err-banner">⚠️ Prices not in sheet yet — add GOOGLEFINANCE formulas to P/Q columns, or click Refresh.</div>`;
+  if (!_btc && !_eth) errs += `<div class="err-banner">⚠️ Live prices not loaded yet — Unable to connect to Binance API. Check your internet or ad-blocker, and click Refresh.</div>`;
   if (!_allBoxes.length) errs += `<div class="err-banner" style="margin-top:8px">⚠️ No boxes loaded from sheet. Check the CSV URL is still published.</div>`;
   document.getElementById('err-area').innerHTML = errs;
 
