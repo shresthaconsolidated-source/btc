@@ -316,10 +316,23 @@ setInterval(loadAll, 60000);
 async function loadAll() {
   const btn = document.getElementById('rbtn');
   btn.classList.add('spin');
-  await fetchCSV();
+  await Promise.all([fetchCSV(), fetchBinance()]);
   render();
   document.getElementById('tick').textContent = 'Updated ' + new Date().toLocaleTimeString();
   btn.classList.remove('spin');
+}
+
+async function fetchBinance() {
+  try {
+    const [b, e] = await Promise.all([
+      fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').then(r=>r.json()),
+      fetch('https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT').then(r=>r.json())
+    ]);
+    if (b && b.price) _btc = parseFloat(b.price);
+    if (e && e.price) _eth = parseFloat(e.price);
+  } catch(err) {
+    console.error('Binance API failed:', err);
+  }
 }
 
 // ── FETCH & PARSE CSV ─────────────────────────────────────────
@@ -336,17 +349,10 @@ function parseAll(text) {
   if (lines.length < 2) return;
 
   _allBoxes = [];
-  _btc = 0; _eth = 0;
 
   // lines[0] = header row, lines[1..] = data rows
   lines.slice(1).forEach(line => {
     const c = splitCSV(line);
-
-    // Extract prices from col P (idx 15) and Q (idx 16)
-    const label = clean(c[15]).toUpperCase();
-    const priceVal = num(c[16]);
-    if (label === 'BTC' && priceVal > 0) _btc = priceVal;
-    if (label === 'ETH' && priceVal > 0) _eth = priceVal;
 
     // Parse box data
     const name   = clean(c[1]);
