@@ -428,8 +428,8 @@ function render() {
   const aprETHusd  = aprETHcoins * (_eth || 0);
   const aprTotalUSD = aprUSDT + aprBTCusd + aprETHusd;
 
-  // Total value = all current holdings + USDT locked in DI + APR in USDT
-  const totalValue = btcUSD + ethUSD + usdtLocked + aprUSDT;
+  // Total value = all current holdings + USDT locked in DI + ALL APR earned
+  const totalValue = btcUSD + ethUSD + usdtLocked + aprTotalUSD;
 
   // Capital gain = current total - what was invested
   const capGain = totalValue - totalInvested;
