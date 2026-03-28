@@ -87,29 +87,57 @@
     /* ACCUM */
     .accum{background:rgba(52,211,153,.04);border:1px solid rgba(52,211,153,.15);border-radius:9px;padding:10px 13px;font-size:12px;color:#6ee7b7}
     .err-banner{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:9px;padding:10px 13px;color:var(--red);font-size:12px;line-height:1.6}
-    /* ── MOBILE ───────────────────────────────────────────────── */
+    /* ── MOBILE ────────────────────────────────────────────── */
     @media (max-width: 768px) {
+      /* Topbar — logo + refresh on row 1, pills on row 2 */
       .topbar {
-        flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 8px;
+        flex-wrap: wrap; height: auto;
+        padding: 10px 12px 0; gap: 0;
       }
+      .logo { font-size: 14px; }
+      .topbar-right { margin-left: auto; }
+      .tick { display: none; }
       .price-pills {
-        order: 3; width: 100%; justify-content: space-between;
+        width: 100%; gap: 0; margin-top: 8px;
+        border-top: 1px solid var(--border);
       }
-      .pill { flex: 1; justify-content: center; }
-      .pill-price { font-size: 13px; }
-      .pill-chg { display: none; }
-      .main {
-        grid-template-columns: 1fr;
-        padding: 10px 12px;
+      .pill {
+        flex: 1; justify-content: center;
+        border-radius: 0; border: none;
+        border-right: 1px solid var(--border);
+        padding: 10px 8px; gap: 6px;
+        background: rgba(17,17,32,0.9);
       }
+      .pill:last-child { border-right: none; }
+      .pill-sym { font-size: 11px; letter-spacing: .5px; }
+      .pill-price { font-size: 17px; font-weight: 800; }
+
+      /* Main layout */
+      .main { grid-template-columns: 1fr; padding: 10px; gap: 10px; }
       .left, .right { gap: 10px; }
-      .card { padding: 14px 12px; }
-      .card-title { margin-bottom: 10px; }
-      .mval { font-size: 12px; }
-      th { font-size: 9px; padding: 6px 7px; }
-      td { padding: 6px 7px; font-size: 11px; }
-      .btn { padding: 8px 12px; font-size: 12px; }
-      .rec { font-size: 11.5px; }
+      .card { padding: 14px 12px; border-radius: 12px; }
+      .card-title { font-size: 9px; margin-bottom: 12px; }
+
+      /* Metric rows: stack label above value for readability */
+      .mrow {
+        flex-direction: column; align-items: flex-start;
+        gap: 1px; padding: 9px 0;
+      }
+      .mlabel { font-size: 10.5px; }
+      .mval-wrap { text-align: left; width: 100%; }
+      .mval { font-size: 20px; font-weight: 800; }
+      .msub { font-size: 11.5px; }
+
+      /* Table: hide less important cols, bigger touch rows */
+      td { padding: 9px 6px; font-size: 11px; }
+      th { padding: 6px 6px; font-size: 9px; }
+      .col-units, .col-days, .col-active, .col-coins { display: none; }
+
+      /* Recs */
+      .rec { font-size: 12px; padding: 10px 12px; }
+
+      /* Buttons — bigger touch target */
+      .btn { padding: 8px 14px; font-size: 12px; min-height: 34px; }
     }
     @media (max-width: 400px) {
       .pill-price { font-size: 12px; }
@@ -556,10 +584,12 @@ function f2(n) { if (!n && n!==0) return '—'; return Number(n).toLocaleString(
 // Always 2 decimal places for dollar values
 function fd(n) { if (n==null||isNaN(n)) return '—'; return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function avg(a){ return a.length ? a.reduce((s,v)=>s+v,0)/a.length : 0; }
+// Fix: only toggle color classes, never wipe base class (mval, msub etc.)
 function setText(id, text, cls) {
   const el = document.getElementById(id); if (!el) return;
   el.innerHTML = text;
-  if (cls !== undefined) el.className = cls ? cls : '';
+  el.classList.remove('pos', 'neg', 'gold');
+  if (cls) el.classList.add(cls);
 }
 
 // ── PWA: Register Service Worker ──────────────────────────────
