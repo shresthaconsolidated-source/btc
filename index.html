@@ -364,6 +364,7 @@ function parseAll(text) {
       days:       Math.max(1, int(c[7])),
       aprPct:     pct(c[8]),             // I - APR %
       hit:        clean(c[9]).toUpperCase() === 'TRUE',
+      refunded:   clean(c[9]).toUpperCase() === 'X', // X means box finished but didn't hit, capital returned
       aprUSDT:    num(c[10]),            // K - APR earned in USDT
       aprCoin:    num(c[11]),            // L - APR earned in coin
       activeInv:  num(c[12]),            // M - active inventory in USDT
@@ -382,9 +383,10 @@ function render() {
   const buys = _allBoxes.filter(b => b.type.toLowerCase() === 'buy');
 
   // ── Totals ──────────────────────────────────────────────────
-  // Split: fresh money from pocket vs APR earnings reinvested
-  const freshCapital   = buys.filter(b => !b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
-  const aprReinvested  = buys.filter(b =>  b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
+  // Split: fresh money from pocket vs APR earnings reinvested. Refunded boxes are excluded entirely.
+  const activeBuys = buys.filter(b => !b.refunded);
+  const freshCapital   = activeBuys.filter(b => !b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
+  const aprReinvested  = activeBuys.filter(b =>  b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
   const totalInvested  = freshCapital; // capital gain/CAGR based on fresh money only
 
   // ── APR from ALL rows (Buy, Sell, APR-funded — everything earns APR) ──
@@ -411,7 +413,7 @@ function render() {
         ethCoins += coins;
         ethUSD   += coins * (_eth || b.entryPrice);
       }
-    } else if (!b.hit && b.amountUSDT > 0) {
+    } else if (!b.hit && !b.refunded && b.amountUSDT > 0) {
       // Still running — USDT is locked in DI, count as USDT holding
       usdtLocked += b.amountUSDT;
     }
@@ -503,7 +505,7 @@ function render() {
           <td style="color:var(--muted)">${b.units.toFixed(6)}</td>
           <td style="color:var(--muted)">${b.days}d</td>
           <td style="color:var(--yellow)">${b.aprPct.toFixed(0)}%</td>
-          <td>${b.hit ? '<span style="color:var(--green);font-size:14px">✓</span>' : '<span style="color:#2d3350;font-size:14px">○</span>'}</td>
+          <td>${b.hit ? '<span style="color:var(--green);font-size:14px;font-weight:800">✓</span>' : (b.refunded ? '<span style="color:var(--muted);font-size:13px;font-weight:800" title="Refunded">⨯</span>' : '<span style="color:#2d3350;font-size:14px">○</span>')}</td>
           <td class="pos">${b.aprUSDT > 0 ? '+$'+fd(b.aprUSDT) : (b.aprCoin > 0 ? '+'+b.aprCoin.toFixed(6)+' '+b.crypto : '+$0.00')}</td>
           <td style="color:var(--muted)">$${f(b.activeInv)}</td>
           <td style="color:var(--muted)">${coins > 0 ? coins.toFixed(6) : '—'}</td>
