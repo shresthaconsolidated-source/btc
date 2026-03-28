@@ -89,59 +89,76 @@
     .err-banner{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:9px;padding:10px 13px;color:var(--red);font-size:12px;line-height:1.6}
     /* ── MOBILE ────────────────────────────────────────────── */
     @media (max-width: 768px) {
-      /* Topbar — logo + refresh on row 1, pills on row 2 */
-      .topbar {
-        flex-wrap: wrap; height: auto;
-        padding: 10px 12px 0; gap: 0;
-      }
-      .logo { font-size: 14px; }
-      .topbar-right { margin-left: auto; }
-      .tick { display: none; }
+      /* Topbar — pills form a bottom strip */
+      .topbar { flex-wrap:wrap; height:auto; padding:10px 12px 0; gap:0; }
+      .logo { font-size:14px; }
+      .topbar-right { margin-left:auto; }
+      .tick { display:none; }
       .price-pills {
-        width: 100%; gap: 0; margin-top: 8px;
-        border-top: 1px solid var(--border);
+        width:100%; gap:0; margin-top:8px;
+        border-top:1px solid var(--border);
       }
       .pill {
-        flex: 1; justify-content: center;
-        border-radius: 0; border: none;
-        border-right: 1px solid var(--border);
-        padding: 10px 8px; gap: 6px;
-        background: rgba(17,17,32,0.9);
+        flex:1; justify-content:center;
+        border-radius:0; border:none;
+        border-right:1px solid var(--border);
+        padding:10px 8px; gap:6px;
+        background:rgba(17,17,32,0.9);
       }
-      .pill:last-child { border-right: none; }
-      .pill-sym { font-size: 11px; letter-spacing: .5px; }
-      .pill-price { font-size: 17px; font-weight: 800; }
+      .pill:last-child { border-right:none; }
+      .pill-sym { font-size:11px; }
+      .pill-price { font-size:17px; font-weight:800; }
 
-      /* Main layout */
-      .main { grid-template-columns: 1fr; padding: 10px; gap: 10px; }
-      .left, .right { gap: 10px; }
-      .card { padding: 14px 12px; border-radius: 12px; }
-      .card-title { font-size: 9px; margin-bottom: 12px; }
+      /* Flatten left/right wrappers so cards can be reordered */
+      .main { display:flex; flex-direction:column; padding:8px; gap:8px; }
+      .left, .right { display:contents; }
 
-      /* Metric rows: stack label above value for readability */
+      /* Card ordering: Recs first, then Portfolio, then APR */
+      .card-recs      { order:1; }
+      .card-portfolio { order:2; }
+      .card-apr       { order:3; }
+      #accum-area     { order:4; }
+      #err-area       { order:4; }
+      .card-monthly   { order:5; }
+      .card-table     { order:6; }
+
+      .card { padding:14px 12px; border-radius:12px; }
+      .card-title { font-size:9px; margin-bottom:10px; }
+
+      /* 2-column KPI tile grid inside Portfolio and APR cards */
+      .card-portfolio,
+      .card-apr {
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:6px;
+        align-items:start;
+      }
+      .card-portfolio > .card-title,
+      .card-portfolio > .mdiv,
+      .card-apr > .card-title,
+      .card-apr > .mdiv {
+        grid-column: 1 / -1;
+      }
+
+      /* Metric rows become tiles */
       .mrow {
-        flex-direction: column; align-items: flex-start;
-        gap: 1px; padding: 9px 0;
+        flex-direction:column; align-items:flex-start;
+        gap:2px; padding:10px 10px;
+        background:rgba(255,255,255,0.03);
+        border-radius:8px; border-bottom:none;
+        margin-bottom:0;
       }
-      .mlabel { font-size: 10.5px; }
-      .mval-wrap { text-align: left; width: 100%; }
-      .mval { font-size: 20px; font-weight: 800; }
-      .msub { font-size: 11.5px; }
+      .mrow:last-child { border-bottom:none; }
+      .mlabel { font-size:10px; color:var(--muted); }
+      .mval-wrap { text-align:left; width:100%; }
+      .mval { font-size:17px; font-weight:800; }
+      .msub { font-size:11px; }
 
-      /* Table: hide less important cols, bigger touch rows */
-      td { padding: 9px 6px; font-size: 11px; }
-      th { padding: 6px 6px; font-size: 9px; }
-      .col-units, .col-days, .col-active, .col-coins { display: none; }
-
-      /* Recs */
-      .rec { font-size: 12px; padding: 10px 12px; }
-
-      /* Buttons — bigger touch target */
-      .btn { padding: 8px 14px; font-size: 12px; min-height: 34px; }
-    }
-    @media (max-width: 400px) {
-      .pill-price { font-size: 12px; }
-      .logo { font-size: 13px; }
+      /* Table touch rows */
+      td { padding:9px 6px; font-size:11px; }
+      th { padding:6px; font-size:9px; }
+      .rec { font-size:12px; padding:10px 12px; }
+      .btn { padding:8px 14px; font-size:12px; min-height:36px; }
     }
   </style>
 </head>
@@ -169,7 +186,7 @@
   <div class="left">
 
     <!-- Portfolio Value -->
-    <div class="card">
+    <div class="card card-portfolio">
       <div class="card-title">💼 Portfolio Value</div>
       <div class="mrow">
         <span class="mlabel">Total Value</span>
@@ -213,7 +230,7 @@
     </div>
 
     <!-- APR / Yield -->
-    <div class="card">
+    <div class="card card-apr">
       <div class="card-title">📈 APR Earned</div>
       <div class="mrow">
         <span class="mlabel">In USDT</span>
@@ -248,19 +265,19 @@
   <div class="right">
 
     <!-- Recommendations -->
-    <div class="card">
+    <div class="card card-recs">
       <div class="card-title">🎯 Recommendations</div>
       <div id="rec-area"><div style="color:var(--muted)">Loading…</div></div>
     </div>
 
     <!-- Monthly CAGR -->
-    <div class="card">
+    <div class="card card-monthly">
       <div class="card-title">📅 Monthly Performance</div>
       <div id="monthly-area"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
     </div>
 
     <!-- Box Ledger -->
-    <div class="card">
+    <div class="card card-table">
       <div class="card-title">📦 Box Ledger <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0;text-transform:none">— Sell rows dimmed, excluded from totals</span></div>
       <div class="tbl-wrap">
         <table>
