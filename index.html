@@ -212,16 +212,16 @@
       </div>
       <div class="mdiv"></div>
       <div class="mrow">
-        <span class="mlabel">Fresh Capital Invested</span>
+        <span class="mlabel">Capital Invested</span>
         <div class="mval-wrap"><span class="mval" id="v-inv">—</span></div>
       </div>
       <div class="mrow">
-        <span class="mlabel">APR Reinvested</span>
-        <div class="mval-wrap"><span class="mval" style="color:var(--purple)" id="v-apr-reinvested">—</span></div>
+        <span class="mlabel">Total APR Earned</span>
+        <div class="mval-wrap"><span class="mval pos" id="v-apr-earned-top">—</span></div>
       </div>
       <div class="mrow">
         <span class="mlabel">Capital Gain / Loss</span>
-        <div class="mval-wrap"><span class="mval" id="v-gain">—</span><span class="msub" style="color:var(--muted)">on fresh capital only</span></div>
+        <div class="mval-wrap"><span class="mval" id="v-gain">—</span><span class="msub" style="color:var(--muted)">excluding APR</span></div>
       </div>
       <div class="mrow">
         <span class="mlabel">CAGR (annualized)</span>
@@ -308,6 +308,7 @@ const ETH_BELOW = 1500,  ETH_ABOVE = 5000;
 // ── STATE ─────────────────────────────────────────────────────
 let _allBoxes = [];   // all rows including Sell
 let _btc = 0, _eth = 0;
+let _manualInv = 0;
 
 // ── INIT ──────────────────────────────────────────────────────
 loadAll();
@@ -337,16 +338,37 @@ function parseAll(text) {
 
   _allBoxes = [];
   _btc = 0; _eth = 0;
+  _manualInv = 0;
+  let invColIndex = -1;
 
   // lines[0] = header row, lines[1..] = data rows
   lines.slice(1).forEach(line => {
     const c = splitCSV(line);
 
-    // Extract prices from col Q (idx 16) and R (idx 17)
-    const label = clean(c[16]).toUpperCase();
-    const priceVal = num(c[17]);
-    if (label === 'BTC' && priceVal > 0) _btc = priceVal;
-    if (label === 'ETH' && priceVal > 0) _eth = priceVal;
+    // Look horizontally for arbitrary column positions
+    for (let i = 10; i < c.length - 1; i++) {
+      const lbl = clean(c[i]).toUpperCase();
+      if (lbl === 'BTC') {
+        const v = num(c[i+1]) || num(c[i+2]);
+        if (v > 0) _btc = v;
+      }
+      if (lbl === 'ETH') {
+        const v = num(c[i+1]) || num(c[i+2]);
+        if (v > 0) _eth = v;
+      }
+      if (lbl === 'INVESTMENT') {
+        invColIndex = i + 1; // "Amount" column is likely right next to it
+      }
+    }
+
+    // Capture manual investment entries underneath
+    if (invColIndex !== -1 && invColIndex < c.length) {
+      const v = num(c[invColIndex]);
+      const prevCol = clean(c[invColIndex-1]).toUpperCase();
+      if (v > 0 && prevCol !== 'INVESTMENT') {
+        _manualInv += v;
+      }
+    }
 
     // Parse box data
     const name   = clean(c[1]);
@@ -387,11 +409,10 @@ function render() {
   const buys = _allBoxes.filter(b => b.type.toLowerCase() === 'buy');
 
   // ── Totals ──────────────────────────────────────────────────
-  // Split: fresh money from pocket vs APR earnings reinvested. Refunded boxes are excluded entirely.
-  const activeBuys = buys.filter(b => !b.refunded);
-  const freshCapital   = activeBuys.filter(b => !b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
-  const aprReinvested  = activeBuys.filter(b =>  b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
-  const totalInvested  = freshCapital; // capital gain/CAGR based on fresh money only
+  // Use manually tracked capital invested from the sheet if available, else fallback
+  const fallbackCapital = buys.filter(b => !b.refunded).reduce((s,b) => s + b.amountUSDT, 0);
+  const totalInvested = _manualInv > 0 ? _manualInv : fallbackCapital;
+  const freshCapital = totalInvested; // For monthly cagr logic
 
   // ── APR from ALL rows (Buy, Sell, APR-funded — everything earns APR) ──
   let aprUSDT = 0, aprBTCcoins = 0, aprETHcoins = 0;
@@ -437,8 +458,8 @@ function render() {
   // Total value = all current holdings + USDT locked in DI + ALL APR earned
   const totalValue = btcUSD + ethUSD + usdtLocked + aprTotalUSD;
 
-  // Capital gain = current total - what was invested
-  const capGain = totalValue - totalInvested;
+  // Capital gain = Total Value - Capital Invested - Total APR
+  const capGain = totalValue - totalInvested - aprTotalUSD;
 
   // CAGR
   let cagr = 0;
@@ -455,8 +476,8 @@ function render() {
   setText('v-eth-coins',      ethCoins.toFixed(4) + ' ETH', '');
   setText('v-eth-usd',        '≈ $' + fd(ethUSD),         '');
   setText('v-usdt',           '$' + fd(usdtLocked),       '');
-  setText('v-inv',            '$' + fd(freshCapital),     '');
-  setText('v-apr-reinvested', aprReinvested > 0 ? '+$' + fd(aprReinvested) : '$0.00', '');
+  setText('v-inv',            '$' + fd(totalInvested),     '');
+  setText('v-apr-earned-top', '+$' + fd(aprTotalUSD),      'pos');
   setText('v-gain',           (capGain >= 0 ? '+$' : '-$') + fd(Math.abs(capGain)), capGain >= 0 ? 'pos' : 'neg');
   setText('v-cagr',           cagr.toFixed(1) + '%',    cagr >= 0 ? 'gold' : 'neg');
 
