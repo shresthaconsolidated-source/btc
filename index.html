@@ -224,7 +224,11 @@
         <div class="mval-wrap"><span class="mval" id="v-gain">—</span><span class="msub" style="color:var(--muted)">excluding APR</span></div>
       </div>
       <div class="mrow">
-        <span class="mlabel">CAGR (annualized)</span>
+        <span class="mlabel">Cap Gain CAGR</span>
+        <div class="mval-wrap"><span class="mval" id="v-cagr-cap">—</span></div>
+      </div>
+      <div class="mrow">
+        <span class="mlabel">Combined CAGR</span>
         <div class="mval-wrap"><span class="mval gold" id="v-cagr">—</span></div>
       </div>
     </div>
@@ -254,6 +258,10 @@
       <div class="mrow">
         <span class="mlabel">Total APR Value</span>
         <div class="mval-wrap"><span class="mval pos" id="v-apr-total">—</span></div>
+      </div>
+      <div class="mrow">
+        <span class="mlabel">APR CAGR</span>
+        <div class="mval-wrap"><span class="mval" id="v-cagr-apr">—</span></div>
       </div>
     </div>
 
@@ -462,11 +470,18 @@ function render() {
   const capGain = totalValue - totalInvested - aprTotalUSD;
 
   // CAGR
-  let cagr = 0;
+  let cagr = 0, cagrAPR = 0, cagrCap = 0;
   if (firstDate && totalInvested > 0 && totalValue > 0) {
     const days = Math.max(1, (Date.now() - firstDate.getTime()) / 86400000);
-    const ratio = totalValue / totalInvested;
-    if (ratio > 0) cagr = (Math.pow(ratio, 365 / days) - 1) * 100;
+    
+    const ratioTotal = totalValue / totalInvested;
+    if (ratioTotal > 0) cagr = (Math.pow(ratioTotal, 365 / days) - 1) * 100;
+    
+    const ratioAPR = (totalInvested + aprTotalUSD) / totalInvested;
+    if (ratioAPR > 0) cagrAPR = (Math.pow(ratioAPR, 365 / days) - 1) * 100;
+
+    const ratioCap = (totalInvested + capGain) / totalInvested;
+    if (ratioCap > 0) cagrCap = (Math.pow(ratioCap, 365 / days) - 1) * 100;
   }
 
   // ── Left Panel ───────────────────────────────────────────────
@@ -479,6 +494,7 @@ function render() {
   setText('v-inv',            '$' + fd(totalInvested),     '');
   setText('v-apr-earned-top', '+$' + fd(aprTotalUSD),      'pos');
   setText('v-gain',           (capGain >= 0 ? '+$' : '-$') + fd(Math.abs(capGain)), capGain >= 0 ? 'pos' : 'neg');
+  setText('v-cagr-cap',       cagrCap.toFixed(1) + '%', cagrCap >= 0 ? 'pos' : 'neg');
   setText('v-cagr',           cagr.toFixed(1) + '%',    cagr >= 0 ? 'gold' : 'neg');
 
   // APR panel
@@ -488,6 +504,7 @@ function render() {
   setText('v-aprb-coins',  '+' + aprBTCcoins.toFixed(8) + ' BTC', 'pos');
   setText('v-aprb-usd',    '≈ $' + fd(aprBTCusd),        'pos');
   setText('v-apr-total',   '+$' + fd(aprTotalUSD),       'pos');
+  setText('v-cagr-apr',    cagrAPR.toFixed(1) + '%',     cagrAPR >= 0 ? 'pos' : 'neg');
 
   // Accumulate banners (Buy rows only, below threshold, still active)
   const accBtc = buys.filter(b => b.crypto==='BTC' && b.entryPrice < BTC_BELOW && b.activeInv > 0);
