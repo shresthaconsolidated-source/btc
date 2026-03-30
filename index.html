@@ -348,11 +348,11 @@ function parseAll(text) {
     // Look horizontally for arbitrary column positions
     for (let i = 10; i < c.length - 1; i++) {
       const lbl = clean(c[i]).toUpperCase();
-      if (lbl === 'BTC') {
+      if (lbl === 'BTC' && _btc === 0) {
         const v = num(c[i+1]) || num(c[i+2]);
         if (v > 0) _btc = v;
       }
-      if (lbl === 'ETH') {
+      if (lbl === 'ETH' && _eth === 0) {
         const v = num(c[i+1]) || num(c[i+2]);
         if (v > 0) _eth = v;
       }
