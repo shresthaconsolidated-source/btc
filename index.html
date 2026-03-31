@@ -593,7 +593,7 @@ function parseAll(text) {
         }
     }
 
-    // Capture manual investment entries from columns P and Q (indices 15 and 16)
+    // 1. Capture manual investment entries from columns P and Q (indices 15 and 16)
     // User specified: from Row 7 onwards, columns P and Q
     const investDateStr = c[15] ? clean(c[15]) : "";
     const investAmt = c[16] ? num(c[16]) : 0;
@@ -604,7 +604,7 @@ function parseAll(text) {
       _manualInv += investAmt;
     }
 
-    // Parse box data
+    // 2. Parse box data (skipping if no name/crypto)
     if (!name || !['BTC','ETH','USDT'].includes(crypto)) return;
 
     const rawHit = clean(c[9]).toUpperCase();
