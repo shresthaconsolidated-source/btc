@@ -684,86 +684,78 @@ function buildRecs(buys, btcP, ethP) {
 // ── MONTHLY PERFORMANCE ───────────────────────────────────────
 function renderMonthly(freshCapital, firstDate) {
   const el = document.getElementById('monthly-area');
-  const history = [];
-  if (!_allBoxes.length || !firstDate) { el.innerHTML = '<div style="color:var(--muted);font-size:12px">No data yet.</div>'; return history; }
+  if (!_allBoxes.length || !firstDate) { el.innerHTML = '<div style="color:var(--muted);font-size:12px">No data yet.</div>'; return { monthly:[], daily:[] }; }
 
-  // Bucket APR by YYYY-MM from ALL rows
   const monthly = {};
-  const daily = {}; // For charting cumulative yield
+  const daily = {}; 
   
   _allBoxes.forEach(b => {
     if (!b.date) return;
-    const d   = new Date(b.date);
-    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-    if (!monthly[key]) monthly[key] = { aprUSDT:0, aprBTC:0, aprETH:0 };
-    monthly[key].aprUSDT += b.aprUSDT;
-    monthly[key].aprBTC  += b.crypto==='BTC' ? b.aprCoin : 0;
-    monthly[key].aprETH  += b.crypto==='ETH' ? b.aprCoin : 0;
+    const dStr = b.date; // "YYYY-MM-DD"
+    const d = new Date(dStr);
+    const mKey = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
     
-    // For cumulative chart
-    const dKey = b.date;
-    if (!daily[dKey]) daily[dKey] = 0;
-    daily[dKey] += b.aprUSDT + (b.crypto==='BTC'?b.aprCoin*(_btc||0) : b.crypto==='ETH'?b.aprCoin*(_eth||0) : 0);
+    if (!monthly[mKey]) monthly[mKey] = { aprUSDT:0, aprBTC:0, aprETH:0 };
+    monthly[mKey].aprUSDT += b.aprUSDT;
+    monthly[mKey].aprBTC  += b.crypto==='BTC' ? b.aprCoin : 0;
+    monthly[mKey].aprETH  += b.crypto==='ETH' ? b.aprCoin : 0;
+    
+    const yieldAmt = b.aprUSDT + (b.crypto==='BTC'?b.aprCoin*(_btc||0) : b.crypto==='ETH'?b.aprCoin*(_eth||0) : 0);
+    daily[dStr] = (daily[dStr] || 0) + yieldAmt;
   });
 
-  const keys = Object.keys(monthly).sort();
-  let cumAPRusd = 0;
+  // Monthly Table logic
+  const mKeys = Object.keys(monthly).sort();
+  let cumMonthly = 0;
   const startTime = firstDate.getTime();
-
-  const rows = keys.map(key => {
+  const mHistory = mKeys.map(key => {
     const m = monthly[key];
     const aprUSD = m.aprUSDT + m.aprBTC*(_btc||0) + m.aprETH*(_eth||0);
-    cumAPRusd += aprUSD;
-
-    // CAGR as of end of that month
+    cumMonthly += aprUSD;
     const [yr, mo] = key.split('-').map(Number);
-    const monthEnd    = new Date(yr, mo, 0).getTime(); // last day of month
+    const monthEnd = new Date(yr, mo, 0).getTime();
     const daysElapsed = Math.max(1, (Math.min(monthEnd, Date.now()) - startTime) / 86400000);
-    const ratio = freshCapital > 0 ? (freshCapital + cumAPRusd) / freshCapital : 1;
-    const cagr  = (Math.pow(ratio, 365/daysElapsed) - 1) * 100;
-    const cagrCls = cagr >= 0 ? 'pos' : 'neg';
-    const label = new Date(yr, mo-1, 1).toLocaleString('default', {month:'short', year:'2-digit'});
-    
-    history.push({ label, cum: cumAPRusd, cagr });
+    const ratio = freshCapital > 0 ? (freshCapital + cumMonthly) / freshCapital : 1;
+    const cagr = (Math.pow(ratio, 365/daysElapsed) - 1) * 100;
+    return { label: new Date(yr, mo-1, 1).toLocaleString('default',{month:'short',year:'2-digit'}), aprUSD, cumMonthly, cagr };
+  });
 
-    return `<tr>
-      <td style="color:var(--muted)">${label}</td>
-      <td class="pos">+$${fd(aprUSD)}</td>
-      <td style="color:var(--muted)">$${fd(cumAPRusd)}</td>
-      <td class="${cagrCls}">${cagr.toFixed(1)}%</td>
-    </tr>`;
-  }).join('');
+  el.innerHTML = `<table><thead><tr><th>Month</th><th>APR This Month</th><th>Cumul. APR</th><th>CAGR (to date)</th></tr></thead><tbody>` + 
+    mHistory.map(h => `<tr><td style="color:var(--muted)">${h.label}</td><td class="pos">+$${fd(h.aprUSD)}</td><td style="color:var(--muted)">$${fd(h.cumMonthly)}</td><td class="${h.cagr>=0?'pos':'neg'}">${h.cagr.toFixed(1)}%</td></tr>`).join('') +
+    `</tbody></table>`;
 
-  el.innerHTML = `<table>
-    <thead><tr>
-      <th>Month</th><th>APR This Month</th><th>Cumul. APR</th><th>CAGR (to date)</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
+  // Daily Chart logic
+  const dKeys = Object.keys(daily).sort();
+  let cumDaily = 0;
+  const dHistory = dKeys.map(date => {
+    cumDaily += daily[date];
+    return { label: date.split('-').slice(1).join('/'), cum: cumDaily }; // "MM/DD"
+  });
   
-  return history;
+  return { monthly: mHistory, daily: dHistory };
 }
 
 function updateChart(data) {
-  if (!data.length) return;
+  const dHistory = data.daily;
+  if (!dHistory || !dHistory.length) return;
   const ctx = document.getElementById('yieldChart').getContext('2d');
   if (_chart) {
-    _chart.data.labels = data.map(d => d.label);
-    _chart.data.datasets[0].data = data.map(d => d.cum);
+    _chart.data.labels = dHistory.map(d => d.label);
+    _chart.data.datasets[0].data = dHistory.map(d => d.cum);
     _chart.update();
   } else {
     _chart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: data.map(d => d.label),
+        labels: dHistory.map(d => d.label),
         datasets: [{
           label: 'Cumul. APR ($)',
-          data: data.map(d => d.cum),
+          data: dHistory.map(d => d.cum),
           borderColor: '#a78bfa',
           backgroundColor: 'rgba(167, 139, 250, 0.1)',
           fill: true,
-          tension: 0.4,
-          pointRadius: 4,
+          tension: 0.3,
+          pointRadius: 3,
           pointBackgroundColor: '#a78bfa'
         }]
       },
@@ -772,8 +764,8 @@ function updateChart(data) {
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
-          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 }, callback: v => '$' + v } }
+          x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } },
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 }, callback: v => '$' + v.toFixed(2) } }
         }
       }
     });
