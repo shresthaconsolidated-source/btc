@@ -581,19 +581,15 @@ function parseAll(text) {
         }
     }
 
-    // Capture manual investment entries
-    if (invColIndex !== -1 && invColIndex < c.length) {
-      const v = num(c[invColIndex]);
-      const prevCol = clean(c[invColIndex-1]).toUpperCase();
-      if (v > 0 && prevCol !== 'INVESTMENT' && firstCol !== 'BOX' && !firstCol.startsWith('BOX')) {
-        const d = dt(c[invColIndex-1]);
-        if (d) {
-          _manualInvs.push({ date: d, amount: v });
-          _manualInv += v;
-        } else {
-          _manualInv += v;
-        }
-      }
+    // Capture manual investment entries from columns P and Q (indices 15 and 16)
+    // User specified: from Row 7, columns P and Q
+    const investDateStr = c[15] ? clean(c[15]) : "";
+    const investAmt = c[16] ? num(c[16]) : 0;
+    const dObj = dt(investDateStr);
+    
+    if (dObj && investAmt > 0) {
+      _manualInvs.push({ date: dObj, amount: investAmt });
+      _manualInv += investAmt;
     }
 
     // Parse box data
