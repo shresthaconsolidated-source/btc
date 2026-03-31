@@ -160,6 +160,34 @@
       .rec { font-size:12px; padding:10px 12px; }
       .btn { padding:8px 14px; font-size:12px; min-height:36px; }
     }
+    
+    /* FILTER BUTTON */
+    .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+    .card-header .card-title { margin-bottom:0; }
+    .filter-toggle {
+      background:rgba(167,139,250,0.05);
+      border:1px solid rgba(167,139,250,0.2);
+      color:var(--purple);
+      padding:4px 10px;
+      border-radius:6px;
+      font-size:10px;
+      font-weight:700;
+      cursor:pointer;
+      transition:all .2s;
+      text-transform:uppercase;
+      letter-spacing:0.5px;
+    }
+    .filter-toggle.active {
+      background:var(--purple);
+      color:var(--bg);
+      border-color:var(--purple);
+    }
+    .filter-toggle:hover {
+      background:rgba(167,139,250,0.15);
+    }
+    .filter-toggle.active:hover {
+      opacity:0.9;
+    }
   </style>
 </head>
 <body>
@@ -286,7 +314,10 @@
 
     <!-- Box Ledger -->
     <div class="card card-table">
-      <div class="card-title">📦 Box Ledger <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0;text-transform:none">— Sell rows dimmed, excluded from totals</span></div>
+      <div class="card-header">
+        <div class="card-title">📦 Box Ledger <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0;text-transform:none">— Sell rows dimmed, excluded from totals</span></div>
+        <button id="filter-btn" class="filter-toggle" onclick="toggleFilter()">Active Only</button>
+      </div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
@@ -317,6 +348,7 @@ const ETH_BELOW = 1500,  ETH_ABOVE = 5000;
 let _allBoxes = [];   // all rows including Sell
 let _btc = 0, _eth = 0;
 let _manualInv = 0;
+let _filterActive = false;
 
 // ── INIT ──────────────────────────────────────────────────────
 loadAll();
@@ -529,9 +561,17 @@ function render() {
   // Monthly performance
   renderMonthly(freshCapital, firstDate);
 
-  // Box table — ALL rows, Sell rows dimmed
-  document.getElementById('tbl-body').innerHTML = _allBoxes.length
-    ? _allBoxes.map(b => {
+  // Box table — filter by active if toggled
+  let displayBoxes = _allBoxes;
+  if (_filterActive) {
+    displayBoxes = _allBoxes.filter(b => {
+      const isRunning = !b.hit && !b.refunded;
+      return isRunning || b.activeInv > 0;
+    });
+  }
+
+  document.getElementById('tbl-body').innerHTML = displayBoxes.length
+    ? displayBoxes.map(b => {
         const isSell = b.type.toLowerCase() === 'sell';
         const cur    = b.crypto === 'BTC' ? _btc : (_eth || 0);
         const coins  = (b.activeInv > 0 && b.entryPrice > 0) ? b.activeInv / b.entryPrice : 0;
@@ -554,7 +594,15 @@ function render() {
           <td class="${curVal > 0 ? (curVal >= b.amountUSDT ? 'pos' : 'neg') : ''}">${curVal > 0 ? '$'+f(curVal) : '—'}</td>
         </tr>`;
       }).join('')
-    : `<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">No data found in sheet.</td></tr>`;
+    : `<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">${_filterActive ? 'No active boxes found.' : 'No data found in sheet.'}</td></tr>`;
+}
+
+function toggleFilter() {
+  _filterActive = !_filterActive;
+  const btn = document.getElementById('filter-btn');
+  if (_filterActive) btn.classList.add('active');
+  else btn.classList.remove('active');
+  render();
 }
 
 // ── RECOMMENDATION ENGINE ─────────────────────────────────────
