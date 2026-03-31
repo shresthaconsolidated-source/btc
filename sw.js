@@ -1,4 +1,4 @@
-const CACHE = 'di-tracker-v10';
+const CACHE = 'di-tracker-v13';
 const SHELL = ['/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', e => {

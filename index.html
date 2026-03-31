@@ -194,41 +194,42 @@
       background:rgba(167,139,250,0.15);
     }
     .chart-container { height:220px; width:100%; margin-top:10px; }
-    .chart-header-metrics { display:flex; gap:15px; margin-top:-8px; margin-bottom:12px; font-size:11px; font-weight:600; border-bottom:1px solid var(--border); padding-bottom:10px; }
+    .chart-header-metrics { display:flex; gap:15px; margin-top:-8px; margin-bottom:12px; font-size:10px; font-weight:600; border-bottom:1px solid var(--border); padding-bottom:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
 
     /* NO-SCROLL LAYOUT (Desktop) */
     @media (min-width: 769px) {
       html, body { height: 100vh; overflow: hidden; }
       .topbar { flex-shrink: 0; }
-      .main { height: calc(100vh - 54px); overflow: hidden; display: grid; grid-template-columns: 310px 1fr; grid-template-rows: 100%; }
-      .left { height: 100%; overflow-y: auto; padding-right: 4px; } /* Sidebar can scroll if too many items */
-      .right { height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 14px; }
-      .card-yield { flex-shrink: 0; height: 350px; }
+      .main { height: calc(100vh - 54px); overflow: hidden; display: grid; grid-template-columns: 280px 1fr; grid-template-rows: 100%; }
+      .left { height: 100%; overflow-y: auto; padding-right: 8px; scrollbar-width: thin; }
+      .right { height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
+      .card-chart { flex-shrink: 0; height: 320px; }
       .card-table { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; }
-      .tbl-wrap { flex-grow: 1; overflow-y: auto; min-height: 0; }
+      .tbl-wrap { flex-grow: 1; overflow-y: auto; min-height: 0; border: 1px solid var(--border2); border-radius: 8px; }
       .left::-webkit-scrollbar, .tbl-wrap::-webkit-scrollbar { width: 4px; }
       .left::-webkit-scrollbar-thumb, .tbl-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
     }
 
     /* ANALYSIS DASHBOARD COMPACT */
-    .analysis-view { display:none; padding:18px 24px; background:var(--analysis-bg); height: calc(100vh - 54px); overflow-y: auto; }
-    @media (min-width: 1000px) {
-      .analysis-grid { grid-template-columns: repeat(4, 1fr); grid-auto-rows: min-content; }
-      .acard { padding: 14px; border-radius: 12px; }
-      .ametric-val { font-size: 20px; }
-    }
-    .acard-title { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
-    .ametric { display:flex; flex-direction:column; gap:4px; margin-bottom:16px; }
-    .ametric:last-child { margin-bottom:0; }
-    .ametric-label { font-size:11.5px; color:var(--muted); }
-    .ametric-val { font-size:24px; font-weight:800; color:var(--text); }
-    .ametric-sub { font-size:11px; color:var(--muted); }
+    .analysis-view { display:none; padding:15px 24px; background:var(--analysis-bg); height: calc(100vh - 54px); overflow-y: auto; }
+    .analysis-grid { display: grid; gap: 12px; max-width: 1600px; margin: 0 auto; grid-template-columns: repeat(4, 1fr); align-items: start; }
+    @media (max-width: 1200px) { .analysis-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 900px) { .analysis-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .analysis-grid { grid-template-columns: 1fr; } }
+
+    .acard { background:var(--analysis-card); border:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(10px); border-radius:12px; padding:15px; box-shadow:0 4px 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
+    .acard-title { font-size:9.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:6px; margin-bottom:4px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; }
+    .ametric { display:flex; justify-content: space-between; align-items: center; padding: 2px 0; }
+    .ametric-label { font-size:10.5px; color:var(--muted); font-weight: 500; }
+    .ametric-val { font-size:18px; font-weight:800; color:var(--text); text-align: right; }
+    .ametric-sub { font-size:10px; color:var(--muted); display: block; margin-top: -2px; opacity: 0.8; }
     .aneon-g { color:#22c55e; } .aneon-r { color:#ef4444; } .aneon-c { color:#06b6d4; }
-    .abar-wrap { height:6px; background:rgba(255,255,255,0.05); border-radius:3px; margin-top:8px; overflow:hidden; }
+    .abar-wrap { height:6px; background:rgba(255,255,255,0.05); border-radius:3px; margin-top:4px; overflow:hidden; width: 100%; grid-column: 1 / -1; }
     .abar { height:100%; border-radius:3px; }
-    .alist { list-style:none; display:flex; flex-direction:column; gap:8px; }
-    .alist-item { display:flex; justify-content:space-between; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.05); }
-    .goal-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text); padding:4px 8px; border-radius:4px; width:100px; font-family:inherit; font-weight:700; }
+    .alist { list-style:none; display:flex; flex-direction:column; gap:6px; }
+    .alist-item { display:flex; justify-content:space-between; padding:8px 10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.05); font-size: 11px; }
+    .goal-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text); padding:2px 6px; border-radius:4px; width:80px; font-family:inherit; font-weight:700; font-size: 11px; }
+  </style>
   </style>
 </head>
 <body>
@@ -400,8 +401,10 @@
       <div class="ametric"><span class="ametric-label">Total APR Earned</span><span class="ametric-val aneon-g" id="a-apr">—</span></div>
       <div class="ametric"><span class="ametric-label">Active Capital</span><span class="ametric-val" id="a-active">—</span></div>
       <div class="ametric"><span class="ametric-label">Idle Capital</span><span class="ametric-val" id="a-idle">—</span></div>
-      <div class="ametric">
-        <span class="ametric-label">Deployment %</span><span class="ametric-val aneon-c" id="a-dep">—</span>
+      <div class="ametric" style="flex-direction: column; align-items: stretch; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="ametric-label">Deployment %</span><span class="ametric-val aneon-c" id="a-dep">—</span>
+        </div>
         <div class="abar-wrap"><div class="abar" id="a-dep-bar" style="background:var(--analysis-cyan)"></div></div>
       </div>
     </div>
@@ -460,11 +463,14 @@
         <span class="ametric-label">Target Goal (USD)</span>
         <input type="number" id="a-goal-input" class="goal-input" value="100000" onchange="renderAnalysis()">
       </div>
-      <div class="ametric">
-        <span class="ametric-label">Progress</span><span class="ametric-val aneon-c" id="a-goal-prog">—</span>
+      <div class="ametric" style="flex-direction: column; align-items: stretch; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="ametric-label">Progress</span><span class="ametric-val aneon-c" id="a-goal-prog">—</span>
+        </div>
         <div class="abar-wrap"><div class="abar" id="a-goal-bar" style="background:#06b6d4"></div></div>
       </div>
-      <div class="ametric"><span class="ametric-label">Years to Goal</span><span class="ametric-val" id="a-goal-eta">—</span><span class="ametric-sub">at current portfolio CAGR</span></div>
+      <div class="ametric"><span class="ametric-label">Years to Goal</span><span class="ametric-val" id="a-goal-eta">—</span></div>
+      <span class="ametric-sub" style="display: block; text-align: right; width: 100%;">at current portfolio CAGR</span>
     </div>
 
     <!-- PROJECTION ENGINE -->
