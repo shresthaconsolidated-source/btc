@@ -328,7 +328,7 @@
     <div class="card card-table">
       <div class="card-header">
         <div class="card-title">📦 Box Ledger <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0;text-transform:none">— Sell rows dimmed, excluded from totals</span></div>
-        <button id="filter-btn" class="filter-toggle" onclick="toggleFilter()">Active Only</button>
+        <button id="filter-btn" class="filter-toggle active" onclick="toggleFilter()">Active Only</button>
       </div>
       <div class="tbl-wrap">
         <table>
@@ -361,7 +361,7 @@ let _allBoxes = [];   // all rows including Sell
 let _btc = 0, _eth = 0;
 let _manualInv = 0;
 let _manualInvs = []; // { date, amount }
-let _filterActive = false;
+let _filterActive = true;
 let _chart = null;
 
 // ── INIT ──────────────────────────────────────────────────────
