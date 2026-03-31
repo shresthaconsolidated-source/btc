@@ -194,41 +194,51 @@
       background:rgba(167,139,250,0.15);
     }
     .chart-container { height:220px; width:100%; margin-top:10px; }
-    .chart-header-metrics { display:flex; gap:15px; margin-top:-8px; margin-bottom:12px; font-size:10px; font-weight:600; border-bottom:1px solid var(--border); padding-bottom:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+    .chart-header-metrics { display:flex; gap:12px; margin-top:-6px; margin-bottom:10px; font-size:10px; font-weight:600; border-bottom:1px solid var(--border); padding-bottom:8px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
 
     /* NO-SCROLL LAYOUT (Desktop) */
     @media (min-width: 769px) {
-      html, body { height: 100vh; overflow: hidden; }
-      .topbar { flex-shrink: 0; }
-      .main { height: calc(100vh - 54px); overflow: hidden; display: grid; grid-template-columns: 280px 1fr; grid-template-rows: 100%; }
-      .left { height: 100%; overflow-y: auto; padding-right: 8px; scrollbar-width: thin; }
-      .right { height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
-      .card-chart { flex-shrink: 0; height: 320px; }
-      .card-table { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; }
-      .tbl-wrap { flex-grow: 1; overflow-y: auto; min-height: 0; border: 1px solid var(--border2); border-radius: 8px; }
-      .left::-webkit-scrollbar, .tbl-wrap::-webkit-scrollbar { width: 4px; }
-      .left::-webkit-scrollbar-thumb, .tbl-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+      html, body { height: 100vh; overflow: hidden; margin:0; padding:0; }
+      .topbar { flex-shrink: 0; padding: 0 16px; height: 44px; }
+      .main { height: calc(100vh - 44px); overflow: hidden; display: grid; grid-template-columns: 240px 1fr; grid-template-rows: 100%; }
+      .left { height: 100%; overflow-y: auto; padding: 10px; scrollbar-width: thin; }
+      .right { height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 10px; }
+      .card-chart { flex-shrink: 0; height: 280px; padding: 10px; }
+      .card-table { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px; }
+      .tbl-wrap { flex-grow: 1; overflow-y: auto; min-height: 0; border: 1px solid var(--border2); border-radius: 6px; }
+      .left::-webkit-scrollbar, .tbl-wrap::-webkit-scrollbar, .analysis-view::-webkit-scrollbar { width: 4px; }
+      .left::-webkit-scrollbar-thumb, .tbl-wrap::-webkit-scrollbar-thumb, .analysis-view::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
     }
 
-    /* ANALYSIS DASHBOARD COMPACT */
-    .analysis-view { display:none; padding:15px 24px; background:var(--analysis-bg); height: calc(100vh - 54px); overflow-y: auto; }
-    .analysis-grid { display: grid; gap: 12px; max-width: 1600px; margin: 0 auto; grid-template-columns: repeat(4, 1fr); align-items: start; }
+    /* ANALYSIS DASHBOARD TERMINAL GRID */
+    .analysis-view { display:none; padding:10px 15px; background:var(--analysis-bg); height: calc(100vh - 44px); overflow-y: auto; }
+    .analysis-grid { 
+      display: grid; 
+      gap: 8px; 
+      max-width: 100%; 
+      margin: 0 auto; 
+      grid-template-columns: repeat(4, 1fr); 
+      align-items: start; 
+    }
     @media (max-width: 1200px) { .analysis-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 900px) { .analysis-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 600px) { .analysis-grid { grid-template-columns: 1fr; } }
 
-    .acard { background:var(--analysis-card); border:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(10px); border-radius:12px; padding:15px; box-shadow:0 4px 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
-    .acard-title { font-size:9.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:6px; margin-bottom:4px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; }
-    .ametric { display:flex; justify-content: space-between; align-items: center; padding: 2px 0; }
-    .ametric-label { font-size:10.5px; color:var(--muted); font-weight: 500; }
-    .ametric-val { font-size:18px; font-weight:800; color:var(--text); text-align: right; }
-    .ametric-sub { font-size:10px; color:var(--muted); display: block; margin-top: -2px; opacity: 0.8; }
+    .acard { background:var(--analysis-card); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:10px; display: flex; flex-direction: column; gap: 4px; }
+    .acard-title { font-size:8.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; display:flex; align-items:center; gap:4px; margin-bottom:2px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 3px; }
+    .ametric { display:flex; justify-content: space-between; align-items: center; padding: 1px 0; }
+    .ametric-label { font-size:9.5px; color:var(--muted); font-weight: 500; }
+    .ametric-val { font-size:15px; font-weight:800; color:var(--text); text-align: right; }
+    .ametric-sub { font-size:9px; color:var(--muted); display: block; margin-top: -1px; opacity: 0.7; width: 100%; text-align: right; }
     .aneon-g { color:#22c55e; } .aneon-r { color:#ef4444; } .aneon-c { color:#06b6d4; }
-    .abar-wrap { height:6px; background:rgba(255,255,255,0.05); border-radius:3px; margin-top:4px; overflow:hidden; width: 100%; grid-column: 1 / -1; }
-    .abar { height:100%; border-radius:3px; }
-    .alist { list-style:none; display:flex; flex-direction:column; gap:6px; }
-    .alist-item { display:flex; justify-content:space-between; padding:8px 10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.05); font-size: 11px; }
-    .goal-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text); padding:2px 6px; border-radius:4px; width:80px; font-family:inherit; font-weight:700; font-size: 11px; }
+    .abar-wrap { height:3px; background:rgba(255,255,255,0.05); border-radius:1.5px; margin-top:2px; overflow:hidden; width: 100%; }
+    .abar { height:100%; border-radius:1.5px; }
+    .alist { list-style:none; display:flex; flex-direction:column; gap:3px; }
+    .alist-item { display:flex; justify-content:space-between; padding:4px 6px; background:rgba(255,255,255,0.02); border-radius:4px; border:1px solid rgba(255,255,255,0.05); font-size: 9.5px; }
+    .goal-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text); padding:1px 4px; border-radius:4px; width:60px; font-family:inherit; font-weight:700; font-size: 9.5px; }
+    
+    .analysis-grid .tbl-wrap { max-height: 200px; }
+  </style>
   </style>
   </style>
 </head>
@@ -567,6 +577,8 @@ function parseAll(text) {
   lines.slice(1).forEach(line => {
     const c = splitCSV(line);
     const firstCol = clean(c[0] || "").toUpperCase();
+    const name   = clean(c[1]);
+    const crypto = clean(c[2]).toUpperCase();
 
     // Look horizontally for arbitrary column positions (prices etc)
     for (let i = 10; i < c.length - 1; i++) {
@@ -582,7 +594,7 @@ function parseAll(text) {
     }
 
     // Capture manual investment entries from columns P and Q (indices 15 and 16)
-    // User specified: from Row 7, columns P and Q
+    // User specified: from Row 7 onwards, columns P and Q
     const investDateStr = c[15] ? clean(c[15]) : "";
     const investAmt = c[16] ? num(c[16]) : 0;
     const dObj = dt(investDateStr);
@@ -593,8 +605,6 @@ function parseAll(text) {
     }
 
     // Parse box data
-    const name   = clean(c[1]);
-    const crypto = clean(c[2]).toUpperCase();
     if (!name || !['BTC','ETH','USDT'].includes(crypto)) return;
 
     const rawHit = clean(c[9]).toUpperCase();
@@ -817,8 +827,10 @@ function render() {
           <td>${b.hit ? '<span style="color:var(--green);font-size:14px;font-weight:800">✓</span>' : (b.refunded ? '<span style="color:var(--muted);font-size:13px;font-weight:800" title="Refunded">⨯</span>' : '<span style="color:#2d3350;font-size:14px">○</span>')}</td>
           <td class="pos">${b.aprUSDT > 0 ? '+$'+fd(b.aprUSDT) : (b.aprCoin > 0 ? '+'+b.aprCoin.toFixed(6)+' '+b.crypto : '+$0.00')}</td>
           <td style="color:var(--muted)">$${f(b.activeInv)}</td>
-          <td style="color:var(--muted)">${coins > 0 ? coins.toFixed(6) : (isSell ? rowCagrText : '—')}</td>
-          <td class="${curVal > 0 ? (curVal >= b.amountUSDT ? 'pos' : 'neg') : (isSell ? rowCagrCls : '')}">${curVal > 0 ? '$'+f(curVal) : (isSell ? '' : '—')}</td>
+          <td style="color:var(--muted)">${coins > 0 ? coins.toFixed(6) : '—'}</td>
+          <td class="${curVal > 0 ? (curVal >= b.amountUSDT ? 'pos' : 'neg') : (isSell ? rowCagrCls : '')}">
+            ${curVal > 0 ? '$'+f(curVal) : (isSell ? rowCagrText : '—')}
+          </td>
         </tr>`;
       }).join('')
     : `<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">${_filterActive ? 'No active boxes found.' : 'No data found in sheet.'}</td></tr>`;
