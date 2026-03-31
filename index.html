@@ -19,6 +19,7 @@
       --bg:#080810; --card:#111120; --border:#1a1a30; --border2:#22223a;
       --text:#e2e8f0; --muted:#64748b;
       --green:#34d399; --red:#f87171; --yellow:#fbbf24; --purple:#a78bfa; --blue:#60a5fa;
+      --analysis-bg: #0f172a; --analysis-card: rgba(30, 41, 59, 0.7);
     }
     body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; font-size:13px; }
 
@@ -28,7 +29,13 @@
       backdrop-filter:blur(12px); border-bottom:1px solid var(--border);
       padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:54px;
     }
+    .topbar-left { display:flex; align-items:center; gap:24px; }
     .logo { font-size:15px; font-weight:700; background:linear-gradient(90deg,var(--purple),var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    
+    .tabs { display:flex; gap:6px; background:rgba(255,255,255,0.03); padding:4px; border-radius:8px; border:1px solid var(--border2); }
+    .tbtn { background:transparent; border:none; color:var(--muted); padding:6px 14px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; transition:all .2s; }
+    .tbtn.active { background:var(--purple); color:var(--bg); }
+    .tbtn:hover:not(.active) { background:rgba(255,255,255,0.05); color:var(--text); }
     .price-pills { display:flex; gap:8px; }
     .pill { background:var(--card); border:1px solid var(--border2); border-radius:10px; padding:5px 16px; display:flex; align-items:center; gap:10px; }
     .pill-sym { font-size:10px; font-weight:700; letter-spacing:1px; color:var(--muted); }
@@ -186,18 +193,36 @@
     .filter-toggle:hover {
       background:rgba(167,139,250,0.15);
     }
-    .filter-toggle.active:hover {
-      opacity:0.9;
-    }
-    
-    /* CHART */
     .chart-container { height:220px; width:100%; margin-top:10px; }
+
+    /* ANALYSIS DASHBOARD */
+    .analysis-view { display:none; padding:18px 24px; background:var(--analysis-bg); min-height:100vh; }
+    .analysis-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; max-width:1400px; margin:0 auto; }
+    .acard { background:var(--analysis-card); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(10px); border-radius:16px; padding:20px; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+    .acard-title { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+    .ametric { display:flex; flex-direction:column; gap:4px; margin-bottom:16px; }
+    .ametric:last-child { margin-bottom:0; }
+    .ametric-label { font-size:11.5px; color:var(--muted); }
+    .ametric-val { font-size:24px; font-weight:800; color:var(--text); }
+    .ametric-sub { font-size:11px; color:var(--muted); }
+    .aneon-g { color:#22c55e; } .aneon-r { color:#ef4444; } .aneon-c { color:#06b6d4; }
+    .abar-wrap { height:6px; background:rgba(255,255,255,0.05); border-radius:3px; margin-top:8px; overflow:hidden; }
+    .abar { height:100%; border-radius:3px; }
+    .alist { list-style:none; display:flex; flex-direction:column; gap:8px; }
+    .alist-item { display:flex; justify-content:space-between; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.05); }
+    .goal-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text); padding:4px 8px; border-radius:4px; width:100px; font-family:inherit; font-weight:700; }
   </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="logo">⚡ DI Tracker</div>
+  <div class="topbar-left">
+    <div class="logo">⚡ DI Tracker</div>
+    <div class="tabs">
+      <button class="tbtn active" id="tab-ledger" onclick="showTab('ledger')">Ledger</button>
+      <button class="tbtn" id="tab-analysis" onclick="showTab('analysis')">Analysis</button>
+    </div>
+  </div>
   <div class="price-pills">
     <div class="pill"><span class="pill-sym">BTC</span><span class="pill-price" id="btc-p">⋯</span></div>
     <div class="pill"><span class="pill-sym">ETH</span><span class="pill-price" id="eth-p">⋯</span></div>
@@ -211,10 +236,9 @@
       </svg>
       Refresh
     </button>
-  </div>
 </div>
 
-<div class="main">
+<div class="main" id="view-ledger">
   <div class="left">
 
     <!-- Portfolio Value -->
@@ -348,6 +372,109 @@
   </div>
 </div>
 
+<!-- ANALYSIS VIEW -->
+<div class="analysis-view" id="view-analysis">
+  <div class="analysis-grid">
+    
+    <!-- PORFOLIO SUMMARY -->
+    <div class="acard">
+      <div class="acard-title">💼 Portfolio Summary</div>
+      <div class="ametric"><span class="ametric-label">Total Capital Invested</span><span class="ametric-val" id="a-inv">—</span></div>
+      <div class="ametric"><span class="ametric-label">Total APR Earned</span><span class="ametric-val aneon-g" id="a-apr">—</span></div>
+      <div class="ametric"><span class="ametric-label">Active Capital</span><span class="ametric-val" id="a-active">—</span></div>
+      <div class="ametric"><span class="ametric-label">Idle Capital</span><span class="ametric-val" id="a-idle">—</span></div>
+      <div class="ametric">
+        <span class="ametric-label">Deployment %</span><span class="ametric-val aneon-c" id="a-dep">—</span>
+        <div class="abar-wrap"><div class="abar" id="a-dep-bar" style="background:var(--analysis-cyan)"></div></div>
+      </div>
+    </div>
+
+    <!-- DAILY INCOME ENGINE -->
+    <div class="acard">
+      <div class="acard-title">⚡ Daily Income Engine</div>
+      <div class="ametric"><span class="ametric-label">Daily Income (Current)</span><span class="ametric-val aneon-g" id="a-daily">—</span><span class="ametric-sub">from 1-day trades</span></div>
+      <div class="ametric"><span class="ametric-label">7-Day Avg Income</span><span class="ametric-val" id="a-avg7">—</span></div>
+      <div class="ametric"><span class="ametric-label">Monthly Projection</span><span class="ametric-val aneon-g" id="a-proj30">—</span><span class="ametric-sub">Projected monthly income</span></div>
+    </div>
+
+    <!-- STRATEGY PERFORMANCE -->
+    <div class="acard">
+      <div class="acard-title">📊 Strategy Performance</div>
+      <div class="ametric"><span class="ametric-label">Win Rate (HIT %)</span><span class="ametric-val" id="a-winrate">—</span></div>
+      <div class="ametric"><span class="ametric-label">Avg Return per Trade</span><span class="ametric-val" id="a-avgret">—</span></div>
+      <div class="ametric"><span class="ametric-label">Avg Holding Days</span><span class="ametric-val" id="a-avgdays">—</span></div>
+      <div class="ametric"><span class="ametric-label">Return per Day</span><span class="ametric-val aneon-c" id="a-retdaily">—</span></div>
+    </div>
+
+    <!-- ALLOCATION -->
+    <div class="acard">
+      <div class="acard-title">🥧 Crypto Allocation</div>
+      <div class="chart-container" style="height:240px">
+        <canvas id="allocChart"></canvas>
+      </div>
+    </div>
+
+    <!-- BOX PERFORMANCE -->
+    <div class="acard" style="grid-column: span 1.5">
+      <div class="acard-title">📦 Box Performance (Top Earners)</div>
+      <div id="a-boxlist" class="alist"></div>
+    </div>
+
+    <!-- REAL PROFIT & EFFICIENCY -->
+    <div class="acard">
+      <div class="acard-title">💎 Real Profit & Efficiency</div>
+      <div class="ametric"><span class="ametric-label">Total Realized Profit</span><span class="ametric-val aneon-g" id="a-profit">—</span></div>
+      <div class="ametric"><span class="ametric-label">Capital Efficiency</span><span class="ametric-val aneon-c" id="a-eff">—</span><span class="ametric-sub">APR Earned / Total Capital</span></div>
+      <div class="acard-title" style="margin:20px 0 10px; font-size:9px">⚠️ Risk Flags</div>
+      <div id="a-risklist" class="alist"></div>
+    </div>
+
+    <!-- MISSED OPPORTUNITY -->
+    <div class="acard">
+      <div class="acard-title">💸 Missed Opportunity (SELLs)</div>
+      <div class="ametric"><span class="ametric-label">Total Missed Gains</span><span class="ametric-val aneon-r" id="a-missed-tot">—</span><span class="ametric-sub">Current Price - Sell Price</span></div>
+      <div id="a-missedlist" class="alist"></div>
+    </div>
+
+    <!-- GOAL TRACKER -->
+    <div class="acard">
+      <div class="acard-title">🎯 Goal Tracker</div>
+      <div class="ametric">
+        <span class="ametric-label">Target Goal (USD)</span>
+        <input type="number" id="a-goal-input" class="goal-input" value="100000" onchange="renderAnalysis()">
+      </div>
+      <div class="ametric">
+        <span class="ametric-label">Progress</span><span class="ametric-val aneon-c" id="a-goal-prog">—</span>
+        <div class="abar-wrap"><div class="abar" id="a-goal-bar" style="background:#06b6d4"></div></div>
+      </div>
+      <div class="ametric"><span class="ametric-label">Years to Goal</span><span class="ametric-val" id="a-goal-eta">—</span><span class="ametric-sub">at current portfolio CAGR</span></div>
+    </div>
+
+    <!-- PROJECTION ENGINE -->
+    <div class="acard">
+      <div class="acard-title">📈 Projection Engine</div>
+      <div class="alist">
+        <div class="alist-item"><span>30 Days</span><b id="a-p30">—</b></div>
+        <div class="alist-item"><span>90 Days</span><b id="a-p90">—</b></div>
+        <div class="alist-item"><span>1 Year</span><b class="aneon-g" id="a-p365">—</b></div>
+      </div>
+      <div class="ametric" style="margin-top:15px"><span class="ametric-label">Daily Passive Income (Est)</span><span class="ametric-val" id="a-passive-y">—</span><span class="ametric-sub" id="a-passive-m">—</span></div>
+    </div>
+
+    <!-- DECISION SUPPORT -->
+    <div class="acard" style="grid-column: 1 / -1">
+      <div class="acard-title">🚦 Decision Support (Active Trades)</div>
+      <div class="tbl-wrap">
+        <table id="a-active-tbl">
+          <thead><tr><th>Name</th><th>Entry $</th><th>Current $</th><th>ROI %</th><th>Annualized</th><th>Advice</th></tr></thead>
+          <tbody id="a-active-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
 const CSV_URL =
@@ -363,6 +490,7 @@ let _manualInv = 0;
 let _manualInvs = []; // { date, amount }
 let _filterActive = true;
 let _chart = null;
+let _allocChart = null;
 
 // ── INIT ──────────────────────────────────────────────────────
 loadAll();
@@ -588,6 +716,7 @@ function render() {
   // Monthly performance
   const historyData = renderMonthly(freshCapital, firstDate);
   updateChart(historyData);
+  renderAnalysis();
 
   // Box table — filter by active if toggled (strictly blank status)
   let displayBoxes = _allBoxes;
@@ -770,6 +899,142 @@ function updateChart(data) {
       }
     });
   }
+}
+
+// ── ANALYSIS DASHBOARD ────────────────────────────────────────
+
+function showTab(tab) {
+  document.getElementById('view-ledger').style.display = tab==='ledger'?'grid':'none';
+  document.getElementById('view-analysis').style.display = tab==='analysis'?'block':'none';
+  document.getElementById('tab-ledger').classList.toggle('active', tab==='ledger');
+  document.getElementById('tab-analysis').classList.toggle('active', tab==='analysis');
+  if (tab==='analysis') renderAnalysis();
+}
+
+function renderAnalysis() {
+  if (!_allBoxes.length) return;
+  const btcP = _btc || 0, ethP = _eth || 0;
+  
+  // Section 1: Portfolio Summary
+  const totalCap = _manualInv || _allBoxes.filter(b=>b.type.toLowerCase()==='buy' && !b.refunded).reduce((s,b)=>s+b.amountUSDT, 0);
+  const totalApr = _allBoxes.reduce((s,b)=>s+b.aprUSDT + (b.crypto==='BTC'?b.aprCoin*btcP : b.crypto==='ETH'?b.aprCoin*ethP : 0), 0);
+  const activeCap = _allBoxes.reduce((s,b)=>s+b.activeInv, 0);
+  const idleCap = totalCap - activeCap;
+  const depPct = (activeCap / totalCap) * 100;
+
+  document.getElementById('a-inv').textContent = '$' + f(totalCap);
+  document.getElementById('a-apr').textContent = '+$' + fd(totalApr);
+  document.getElementById('a-active').textContent = '$' + f(activeCap);
+  document.getElementById('a-idle').textContent = '$' + f(idleCap);
+  document.getElementById('a-dep').textContent = depPct.toFixed(1) + '%';
+  document.getElementById('a-dep-bar').style.width = depPct + '%';
+
+  // Section 2: Daily Income
+  const dIncome = _allBoxes.filter(b=>b.days===1).reduce((s,b)=>s+b.aprUSDT + (b.crypto==='BTC'?b.aprCoin*btcP : b.crypto==='ETH'?b.aprCoin*ethP : 0), 0);
+  const last7 = _allBoxes.slice(-7).reduce((s,b)=>s+b.aprUSDT + (b.crypto==='BTC'?b.aprCoin*btcP : b.crypto==='ETH'?b.aprCoin*ethP : 0), 0) / 7;
+  document.getElementById('a-daily').textContent = '$' + fd(dIncome);
+  document.getElementById('a-avg7').textContent = '$' + fd(last7);
+  document.getElementById('a-proj30').textContent = '$' + f(dIncome * 30);
+
+  // Section 3: Strategy
+  const hits = _allBoxes.filter(b=>b.hit).length;
+  const totalFin = _allBoxes.filter(b=>b.hit || b.refunded).length;
+  const winRate = totalFin ? (hits / totalFin) * 100 : 0;
+  const avgRet = _allBoxes.length ? totalApr / _allBoxes.length : 0;
+  const avgDays = avg(_allBoxes.map(b=>b.days));
+  document.getElementById('a-winrate').textContent = winRate.toFixed(1) + '%';
+  document.getElementById('a-avgret').textContent = '$' + fd(avgRet);
+  document.getElementById('a-avgdays').textContent = avgDays.toFixed(1) + 'd';
+  document.getElementById('a-retdaily').textContent = '$' + fd(avgRet / Math.max(1, avgDays));
+
+  // Section 4: Crypto Allocation
+  const alloc = { BTC:0, ETH:0, USDT:0 };
+  _allBoxes.filter(b=>b.activeInv>0).forEach(b=> { alloc[b.crypto] += b.activeInv; });
+  const totalAlloc = (alloc.BTC + alloc.ETH + alloc.USDT) || 1;
+  
+  if (!_allocChart) {
+    const ctx = document.getElementById('allocChart').getContext('2d');
+    _allocChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['BTC','ETH','USDT'],
+        datasets: [{ data: [alloc.BTC, alloc.ETH, alloc.USDT], backgroundColor: ['#fbbf24','#a78bfa','#34d399'], borderWidth: 0 }]
+      },
+      options: { cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } } }
+    });
+  } else {
+    _allocChart.data.datasets[0].data = [alloc.BTC, alloc.ETH, alloc.USDT];
+    _allocChart.update();
+  }
+
+  // Section 5: Box Performance
+  const boxes = {};
+  _allBoxes.forEach(b => {
+    if (!boxes[b.name]) boxes[b.name] = { inv:0, apr:0, hits:0, fin:0 };
+    if (b.type.toLowerCase()==='buy') boxes[b.name].inv += b.amountUSDT;
+    boxes[b.name].apr += b.aprUSDT + (b.crypto==='BTC'?b.aprCoin*btcP : b.crypto==='ETH'?b.aprCoin*ethP : 0);
+    if (b.hit) boxes[b.name].hits++;
+    if (b.hit || b.refunded) boxes[b.name].fin++;
+  });
+  const boxHtml = Object.keys(boxes).sort((a,b)=>boxes[b].apr - boxes[a].apr).slice(0,5).map(name => {
+    const d = boxes[name];
+    const wr = d.fin ? (d.hits/d.fin*100).toFixed(0) : 0;
+    return `<div class="alist-item"><span><b>${name}</b> <span style="font-size:10px;color:var(--muted)">Inv: $${f(d.inv)}</span></span><span class="aneon-g">+$${f(d.apr)} <span style="font-size:9px;color:var(--muted);margin-left:5px">${wr}% WR</span></span></div>`;
+  }).join('');
+  document.getElementById('a-boxlist').innerHTML = boxHtml;
+
+  // Section 6 & 7: Real Profit & Risk
+  document.getElementById('a-profit').textContent = '$' + fd(totalApr);
+  document.getElementById('a-eff').textContent = (totalApr/totalCap*100).toFixed(2) + '%';
+  const riskHtml = _allBoxes.filter(b=> !b.hit && !b.refunded && (b.days>3 || b.aprPct<10)).slice(0,3).map(b=> {
+    return `<div class="alist-item"><span>${b.name}</span><span class="aneon-r">${b.days>3?b.days+'d':b.aprPct+'% APR'}</span></div>`;
+  }).join('');
+  document.getElementById('a-risklist').innerHTML = riskHtml || '<div style="color:var(--muted);font-size:11px">No risk flags.</div>';
+
+  // Section 8: Missed Opportunity
+  let missedTot = 0;
+  const missedHtml = _allBoxes.filter(b=>b.type.toLowerCase()==='sell').slice(0,4).map(b=> {
+    const cur = b.crypto==='BTC'?btcP:ethP;
+    const missed = (cur - b.entryPrice) * b.units;
+    if (missed > 0) missedTot += missed;
+    return missed > 0 ? `<div class="alist-item"><span>${b.name}</span><span class="aneon-r">-$${f(missed)}</span></div>` : '';
+  }).join('');
+  document.getElementById('a-missed-tot').textContent = '$' + f(missedTot);
+  document.getElementById('a-missedlist').innerHTML = missedHtml || '<div style="color:var(--muted);font-size:11px">No missed gains.</div>';
+
+  // Section 9: Goal Tracker
+  const target = parseFloat(document.getElementById('a-goal-input').value) || 100000;
+  const totalVal = activeCap + idleCap + totalApr;
+  const prog = (totalVal / target) * 100;
+  document.getElementById('a-goal-prog').textContent = prog.toFixed(1) + '%';
+  document.getElementById('a-goal-bar').style.width = Math.min(100, prog) + '%';
+  
+  const days = Math.max(1, (Date.now() - firstDate.getTime()) / 86400000);
+  const ratio = totalVal / totalCap;
+  const cagr = (Math.pow(ratio, 365 / days) - 1);
+  if (cagr > 0) {
+    const yrs = Math.log(target/totalVal) / Math.log(1+cagr);
+    document.getElementById('a-goal-eta').textContent = yrs.toFixed(1) + ' Years';
+  }
+
+  // Section 10 & 11: Projections
+  const p30 = totalVal * Math.pow(1+cagr/365, 30);
+  const p90 = totalVal * Math.pow(1+cagr/365, 90);
+  const p365 = totalVal * Math.pow(1+cagr/365, 365);
+  document.getElementById('a-p30').textContent = '$' + f(p30);
+  document.getElementById('a-p90').textContent = '$' + f(p90);
+  document.getElementById('a-p365').textContent = '$' + f(p365);
+  document.getElementById('a-passive-y').textContent = '$' + f(dIncome * 365) + ' / Year';
+  document.getElementById('a-passive-m').textContent = '≈ $' + f(dIncome * 30) + ' / Month';
+
+  // Section 12: Decision Support
+  const activeBody = _allBoxes.filter(b=> !b.hit && !b.refunded).map(b=> {
+    const cur = b.crypto==='BTC'?btcP:ethP;
+    const roi = (cur - b.entryPrice) / b.entryPrice * 100;
+    const ann = (roi / b.days) * 365;
+    return `<tr><td>${b.name}</td><td>$${f(b.entryPrice)}</td><td>$${f(cur)}</td><td class="${roi>=0?'pos':'neg'}">${roi.toFixed(1)}%</td><td>${ann.toFixed(0)}%</td><td>${roi > 1 ? '<span class="aneon-g">HOLD</span>' : 'WAIT'}</td></tr>`;
+  }).join('');
+  document.getElementById('a-active-body').innerHTML = activeBody;
 }
 
 // ── CSV helpers ───────────────────────────────────────────────
