@@ -561,12 +561,12 @@ function render() {
   // Monthly performance
   renderMonthly(freshCapital, firstDate);
 
-  // Box table — filter by active if toggled
+  // Box table — filter by active if toggled (strictly blank status)
   let displayBoxes = _allBoxes;
   if (_filterActive) {
     displayBoxes = _allBoxes.filter(b => {
-      const isRunning = !b.hit && !b.refunded;
-      return isRunning || b.activeInv > 0;
+      // User clarified: only blank status is 'active'
+      return !b.hit && !b.refunded;
     });
   }
 
