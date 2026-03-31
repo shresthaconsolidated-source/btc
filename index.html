@@ -194,12 +194,30 @@
       background:rgba(167,139,250,0.15);
     }
     .chart-container { height:220px; width:100%; margin-top:10px; }
+    .chart-header-metrics { display:flex; gap:15px; margin-top:-8px; margin-bottom:12px; font-size:11px; font-weight:600; border-bottom:1px solid var(--border); padding-bottom:10px; }
 
-    /* ANALYSIS DASHBOARD */
-    .analysis-view { display:none; padding:18px 24px; background:var(--analysis-bg); min-height:100vh; }
-    .analysis-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; max-width:1400px; margin:0 auto; }
-    .acard { background:var(--analysis-card); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(10px); border-radius:16px; padding:20px; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
-    .acard-title { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+    /* NO-SCROLL LAYOUT (Desktop) */
+    @media (min-width: 769px) {
+      html, body { height: 100vh; overflow: hidden; }
+      .topbar { flex-shrink: 0; }
+      .main { height: calc(100vh - 54px); overflow: hidden; display: grid; grid-template-columns: 310px 1fr; grid-template-rows: 100%; }
+      .left { height: 100%; overflow-y: auto; padding-right: 4px; } /* Sidebar can scroll if too many items */
+      .right { height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 14px; }
+      .card-yield { flex-shrink: 0; height: 350px; }
+      .card-table { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; }
+      .tbl-wrap { flex-grow: 1; overflow-y: auto; min-height: 0; }
+      .left::-webkit-scrollbar, .tbl-wrap::-webkit-scrollbar { width: 4px; }
+      .left::-webkit-scrollbar-thumb, .tbl-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+    }
+
+    /* ANALYSIS DASHBOARD COMPACT */
+    .analysis-view { display:none; padding:18px 24px; background:var(--analysis-bg); height: calc(100vh - 54px); overflow-y: auto; }
+    @media (min-width: 1000px) {
+      .analysis-grid { grid-template-columns: repeat(4, 1fr); grid-auto-rows: min-content; }
+      .acard { padding: 14px; border-radius: 12px; }
+      .ametric-val { font-size: 20px; }
+    }
+    .acard-title { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
     .ametric { display:flex; flex-direction:column; gap:4px; margin-bottom:16px; }
     .ametric:last-child { margin-bottom:0; }
     .ametric-label { font-size:11.5px; color:var(--muted); }
@@ -335,16 +353,14 @@
       <div id="rec-area"><div style="color:var(--muted)">Loading…</div></div>
     </div>
 
-    <!-- Monthly CAGR -->
-    <div class="card card-monthly">
-      <div class="card-title">📅 Monthly Performance</div>
-      <div id="monthly-area"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
-    </div>
-
     <!-- Performance Trends -->
-    <div class="card card-chart">
+    <div class="card card-chart" style="flex-shrink:0;height:340px;display:flex;flex-direction:column">
       <div class="card-title">📉 Performance Trends <span style="text-transform:none;color:var(--muted);font-weight:400">— Cumulative APR (USDT)</span></div>
-      <div class="chart-container">
+      <div class="chart-header-metrics" id="chart-metrics">
+        <div style="color:var(--muted)">LATEST MONTH: <span class="pos" id="m-apr-head">—</span></div>
+        <div style="color:var(--muted)">PORTFOLIO CAGR: <span class="gold" id="m-cagr-head">—</span></div>
+      </div>
+      <div class="chart-container" style="flex-grow:1;min-height:0">
         <canvas id="yieldChart"></canvas>
       </div>
     </div>
@@ -839,16 +855,16 @@ function buildRecs(buys, btcP, ethP) {
 
 // ── MONTHLY PERFORMANCE ───────────────────────────────────────
 function renderMonthly(freshCapital, firstDate) {
-  const el = document.getElementById('monthly-area');
-  if (!_allBoxes.length || !firstDate) { el.innerHTML = '<div style="color:var(--muted);font-size:12px">No data yet.</div>'; return { monthly:[], daily:[] }; }
+  if (!_allBoxes.length || !firstDate) return { monthly:[], daily:[] };
 
   const monthly = {};
   const daily = {}; 
   
   _allBoxes.forEach(b => {
     if (!b.date) return;
-    const dStr = b.date; // "YYYY-MM-DD"
-    const d = new Date(dStr);
+    const dStr = b.date;
+    const d = dt(dStr);
+    if (!d) return;
     const mKey = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
     
     if (!monthly[mKey]) monthly[mKey] = { aprUSDT:0, aprBTC:0, aprETH:0 };
@@ -860,7 +876,6 @@ function renderMonthly(freshCapital, firstDate) {
     daily[dStr] = (daily[dStr] || 0) + yieldAmt;
   });
 
-  // Monthly Table logic
   const mKeys = Object.keys(monthly).sort();
   let cumMonthly = 0;
   const startTime = firstDate.getTime();
@@ -876,16 +891,19 @@ function renderMonthly(freshCapital, firstDate) {
     return { label: new Date(yr, mo-1, 1).toLocaleString('default',{month:'short',year:'2-digit'}), aprUSD, cumMonthly, cagr };
   });
 
-  el.innerHTML = `<table><thead><tr><th>Month</th><th>APR This Month</th><th>Cumul. APR</th><th>CAGR (to date)</th></tr></thead><tbody>` + 
-    mHistory.map(h => `<tr><td style="color:var(--muted)">${h.label}</td><td class="pos">+$${fd(h.aprUSD)}</td><td style="color:var(--muted)">$${fd(h.cumMonthly)}</td><td class="${h.cagr>=0?'pos':'neg'}">${h.cagr.toFixed(1)}%</td></tr>`).join('') +
-    `</tbody></table>`;
+  if (mHistory.length) {
+    const latest = mHistory[mHistory.length-1];
+    const aprEl = document.getElementById('m-apr-head');
+    const cagrEl = document.getElementById('m-cagr-head');
+    if (aprEl) aprEl.textContent = '+$' + fd(latest.aprUSD);
+    if (cagrEl) cagrEl.textContent = latest.cagr.toFixed(1) + '%';
+  }
 
-  // Daily Chart logic
   const dKeys = Object.keys(daily).sort();
   let cumDaily = 0;
   const dHistory = dKeys.map(date => {
     cumDaily += daily[date];
-    return { label: date.split('-').slice(1).join('/'), cum: cumDaily }; // "MM/DD"
+    return { label: date.split('-').slice(1).join('/'), cum: cumDaily };
   });
   
   return { monthly: mHistory, daily: dHistory };
