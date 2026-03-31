@@ -12,6 +12,7 @@
   <link rel="apple-touch-icon" href="/icon-192.png"/>
   <title>⚡ Crypto DI Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -188,6 +189,9 @@
     .filter-toggle.active:hover {
       opacity:0.9;
     }
+    
+    /* CHART */
+    .chart-container { height:220px; width:100%; margin-top:10px; }
   </style>
 </head>
 <body>
@@ -312,6 +316,14 @@
       <div id="monthly-area"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
     </div>
 
+    <!-- Performance Trends -->
+    <div class="card card-chart">
+      <div class="card-title">📉 Performance Trends <span style="text-transform:none;color:var(--muted);font-weight:400">— Cumulative APR (USDT)</span></div>
+      <div class="chart-container">
+        <canvas id="yieldChart"></canvas>
+      </div>
+    </div>
+
     <!-- Box Ledger -->
     <div class="card card-table">
       <div class="card-header">
@@ -348,7 +360,9 @@ const ETH_BELOW = 1500,  ETH_ABOVE = 5000;
 let _allBoxes = [];   // all rows including Sell
 let _btc = 0, _eth = 0;
 let _manualInv = 0;
+let _manualInvs = []; // { date, amount }
 let _filterActive = false;
+let _chart = null;
 
 // ── INIT ──────────────────────────────────────────────────────
 loadAll();
@@ -379,6 +393,7 @@ function parseAll(text) {
   _allBoxes = [];
   _btc = 0; _eth = 0;
   _manualInv = 0;
+  _manualInvs = [];
   let invColIndex = -1;
 
   // lines[0] = header row, lines[1..] = data rows
@@ -406,7 +421,14 @@ function parseAll(text) {
       const v = num(c[invColIndex]);
       const prevCol = clean(c[invColIndex-1]).toUpperCase();
       if (v > 0 && prevCol !== 'INVESTMENT') {
-        _manualInv += v;
+        const dStr = clean(c[invColIndex-1]);
+        const d = new Date(dStr);
+        if (!isNaN(d.getTime())) {
+          _manualInvs.push({ date: d, amount: v });
+          _manualInv += v;
+        } else {
+          _manualInv += v;
+        }
       }
     }
 
@@ -483,11 +505,16 @@ function render() {
       usdtLocked += b.amountUSDT;
     }
 
-    // Earliest date for CAGR
+    // Earliest date for CAGR from boxes
     if (b.date) {
       const d = new Date(b.date);
       if (!firstDate || d < firstDate) firstDate = d;
     }
+  });
+
+  // Include manual investment dates in firstDate
+  _manualInvs.forEach(m => {
+    if (!firstDate || m.date < firstDate) firstDate = m.date;
   });
 
   // APR in USD terms
@@ -559,7 +586,8 @@ function render() {
     : `<div style="color:var(--muted);font-size:12px">Add boxes to your sheet to see recommendations.</div>`;
 
   // Monthly performance
-  renderMonthly(freshCapital, firstDate);
+  const historyData = renderMonthly(freshCapital, firstDate);
+  updateChart(historyData);
 
   // Box table — filter by active if toggled (strictly blank status)
   let displayBoxes = _allBoxes;
@@ -577,6 +605,31 @@ function render() {
         const coins  = (b.activeInv > 0 && b.entryPrice > 0) ? b.activeInv / b.entryPrice : 0;
         const curVal = coins * cur;
         const aprBadge = b.aprFunded ? ' <span style="font-size:9px;background:rgba(167,139,250,.15);color:var(--purple);padding:1px 5px;border-radius:3px;font-weight:600">APR</span>' : '';
+        
+        // Individual CAGR logic
+        let rowCagrText = '—';
+        let rowCagrCls = '';
+        if (isSell) {
+          const buyMatch = _allBoxes.find(x => x.type.toLowerCase() === 'buy' && x.name === b.name);
+          if (buyMatch && buyMatch.amountUSDT > 0 && b.amountUSDT > 0) {
+            const ratio = b.amountUSDT / buyMatch.amountUSDT;
+            const bD = new Date(buyMatch.date);
+            const sD = new Date(b.date);
+            const dHeld = Math.max(1, (sD - bD) / 86400000);
+            const cagrVal = (Math.pow(ratio, 365 / dHeld) - 1) * 100;
+            const roiVal  = (ratio - 1) * 100;
+            rowCagrText = `${roiVal >= 0 ? '+' : ''}${roiVal.toFixed(1)}% <span style="font-size:9px;color:var(--muted)">(${cagrVal.toFixed(0)}% CAGR)</span>`;
+            rowCagrCls = roiVal >= 0 ? 'pos' : 'neg';
+          }
+        } else if (b.hit && coins > 0) {
+          // Settled buy — currently holding coins
+          const ratio = curVal / b.amountUSDT;
+          const bD = new Date(b.date);
+          const dHeld = Math.max(1, (Date.now() - bD.getTime()) / 86400000);
+          const cagrVal = (Math.pow(ratio, 365 / dHeld) - 1) * 100;
+          rowCagrText = `<span style="font-size:9px;color:var(--muted)">${cagrVal.toFixed(0)}% CAGR</span>`;
+        }
+
         return `<tr class="${isSell ? 'sell-row' : ''}">
           <td style="color:var(--muted)">${b.date}</td>
           <td><b>${b.name}</b>${aprBadge}</td>
@@ -590,8 +643,8 @@ function render() {
           <td>${b.hit ? '<span style="color:var(--green);font-size:14px;font-weight:800">✓</span>' : (b.refunded ? '<span style="color:var(--muted);font-size:13px;font-weight:800" title="Refunded">⨯</span>' : '<span style="color:#2d3350;font-size:14px">○</span>')}</td>
           <td class="pos">${b.aprUSDT > 0 ? '+$'+fd(b.aprUSDT) : (b.aprCoin > 0 ? '+'+b.aprCoin.toFixed(6)+' '+b.crypto : '+$0.00')}</td>
           <td style="color:var(--muted)">$${f(b.activeInv)}</td>
-          <td style="color:var(--muted)">${coins > 0 ? coins.toFixed(6) : '—'}</td>
-          <td class="${curVal > 0 ? (curVal >= b.amountUSDT ? 'pos' : 'neg') : ''}">${curVal > 0 ? '$'+f(curVal) : '—'}</td>
+          <td style="color:var(--muted)">${coins > 0 ? coins.toFixed(6) : (isSell ? rowCagrText : '—')}</td>
+          <td class="${curVal > 0 ? (curVal >= b.amountUSDT ? 'pos' : 'neg') : (isSell ? rowCagrCls : '')}">${curVal > 0 ? '$'+f(curVal) : (isSell ? '' : '—')}</td>
         </tr>`;
       }).join('')
     : `<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">${_filterActive ? 'No active boxes found.' : 'No data found in sheet.'}</td></tr>`;
@@ -612,8 +665,15 @@ function buildRecs(buys, btcP, ethP) {
     if (!price) { recs.push({type:'HOLD',crypto:coin,msg:'Price not available in sheet yet.'}); return; }
     if (price < below) { recs.push({type:'ACCUMULATE',crypto:coin,msg:`@ $${f(price)} — below $${f(below)}. 🟢 Buy more in Dual Investment.`}); return; }
     if (price > above) { recs.push({type:'SELL_ZONE',crypto:coin,msg:`🔴 @ $${f(price)} — above $${f(above)}! Sell 1% per ${coin==='BTC'?'$1k':'$100'} rise.`}); return; }
-    const elig = buys.filter(b => b.crypto===coin && b.entryPrice>=below && b.activeInv>0 && price>=b.entryPrice);
-    if (!elig.length) { recs.push({type:'HOLD',crypto:coin,msg:`@ $${f(price)} — cycling zone. No boxes at or above current price yet.`}); return; }
+    
+    const elig = buys.filter(b => {
+      if (b.crypto !== coin || b.entryPrice < below || b.activeInv === 0 || price < b.entryPrice) return false;
+      // Filter out if a pending 'Sell' trade exists for this box name
+      const hasPendingSell = _allBoxes.some(s => s.type.toLowerCase() === 'sell' && s.name === b.name && !s.hit && !s.refunded);
+      return !hasPendingSell;
+    });
+
+    if (!elig.length) { recs.push({type:'HOLD',crypto:coin,msg:`@ $${f(price)} — cycling zone. No boxes eligible for sell DI yet (or Sell already placed).`}); return; }
     elig.forEach(b => recs.push({type:'SELL_BOX',crypto:coin,
       msg:`📦 <b>${b.name}</b> — Entry $${f(b.entryPrice)} (+${((price-b.entryPrice)/b.entryPrice*100).toFixed(1)}%). ✅ Place Sell DI @ $${f(b.entryPrice*1.01)}.`
     }));
@@ -624,10 +684,13 @@ function buildRecs(buys, btcP, ethP) {
 // ── MONTHLY PERFORMANCE ───────────────────────────────────────
 function renderMonthly(freshCapital, firstDate) {
   const el = document.getElementById('monthly-area');
-  if (!_allBoxes.length || !firstDate) { el.innerHTML = '<div style="color:var(--muted);font-size:12px">No data yet.</div>'; return; }
+  const history = [];
+  if (!_allBoxes.length || !firstDate) { el.innerHTML = '<div style="color:var(--muted);font-size:12px">No data yet.</div>'; return history; }
 
   // Bucket APR by YYYY-MM from ALL rows
   const monthly = {};
+  const daily = {}; // For charting cumulative yield
+  
   _allBoxes.forEach(b => {
     if (!b.date) return;
     const d   = new Date(b.date);
@@ -636,6 +699,11 @@ function renderMonthly(freshCapital, firstDate) {
     monthly[key].aprUSDT += b.aprUSDT;
     monthly[key].aprBTC  += b.crypto==='BTC' ? b.aprCoin : 0;
     monthly[key].aprETH  += b.crypto==='ETH' ? b.aprCoin : 0;
+    
+    // For cumulative chart
+    const dKey = b.date;
+    if (!daily[dKey]) daily[dKey] = 0;
+    daily[dKey] += b.aprUSDT + (b.crypto==='BTC'?b.aprCoin*(_btc||0) : b.crypto==='ETH'?b.aprCoin*(_eth||0) : 0);
   });
 
   const keys = Object.keys(monthly).sort();
@@ -655,6 +723,9 @@ function renderMonthly(freshCapital, firstDate) {
     const cagr  = (Math.pow(ratio, 365/daysElapsed) - 1) * 100;
     const cagrCls = cagr >= 0 ? 'pos' : 'neg';
     const label = new Date(yr, mo-1, 1).toLocaleString('default', {month:'short', year:'2-digit'});
+    
+    history.push({ label, cum: cumAPRusd, cagr });
+
     return `<tr>
       <td style="color:var(--muted)">${label}</td>
       <td class="pos">+$${fd(aprUSD)}</td>
@@ -669,6 +740,44 @@ function renderMonthly(freshCapital, firstDate) {
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
+  
+  return history;
+}
+
+function updateChart(data) {
+  if (!data.length) return;
+  const ctx = document.getElementById('yieldChart').getContext('2d');
+  if (_chart) {
+    _chart.data.labels = data.map(d => d.label);
+    _chart.data.datasets[0].data = data.map(d => d.cum);
+    _chart.update();
+  } else {
+    _chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map(d => d.label),
+        datasets: [{
+          label: 'Cumul. APR ($)',
+          data: data.map(d => d.cum),
+          borderColor: '#a78bfa',
+          backgroundColor: 'rgba(167, 139, 250, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: '#a78bfa'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 }, callback: v => '$' + v } }
+        }
+      }
+    });
+  }
 }
 
 // ── CSV helpers ───────────────────────────────────────────────
