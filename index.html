@@ -712,7 +712,8 @@ function render() {
   const buys = _allBoxes.filter(b => b.type.toLowerCase() === 'buy');
 
   // ── Totals ──────────────────────────────────────────────────
-  const totalInvested = _manualInv > 0 ? _manualInv : buys.filter(b => !b.refunded).reduce((s,b) => s + b.amountUSDT, 0);
+  // ── Totals ──────────────────────────────────────────────────
+  const totalInjected = _manualInv > 0 ? _manualInv : buys.filter(b => !b.refunded && !b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
 
   let aprUSDT = 0, aprBTCcoins = 0, aprETHcoins = 0;
   _allBoxes.forEach(b => {
@@ -721,46 +722,45 @@ function render() {
     if (b.crypto === 'ETH') aprETHcoins += b.aprCoin;
   });
 
-  // Calculate Net Units (Sum of Buy Hits - Sum of Sell Hits + APR Coins)
-  // For 'Sell' trades, if not hit yet, the units are still yours but locked.
+  // Unified Cash Flow & Inventory
   let btcUnits = 0, ethUnits = 0;
   let activeCosts = 0;
   let usdtLocked = 0;
   let realizedPnL = 0;
+  let liquidCash = totalInjected + aprUSDT;
 
-  // Process all boxes to find realized PnL and net holdings
+  // Track original buy costs for sold items
+  const buyCostMap = {}; 
+  _allBoxes.filter(b => b.type.toLowerCase()==='buy').forEach(b => { buyCostMap[b.name] = b.amountUSDT; });
+
   _allBoxes.forEach(b => {
     const isHit = b.hit;
     const isRunning = !b.hit && !b.refunded;
     const isBuy = b.type.toLowerCase() === 'buy';
     const isSell = b.type.toLowerCase() === 'sell';
 
-    if (isBuy) {
+    if (isBuy && !b.refunded) {
+      if (!b.aprFunded) liquidCash -= b.amountUSDT; // Subtract from liquid pool
+      
       if (isHit) {
-        // We have the coins. Add to units.
         if (b.crypto === 'BTC') btcUnits += b.units;
         else if (b.crypto === 'ETH') ethUnits += b.units;
-        // Tracking cost basis for active holdings (using Active Inventory if provided, else original amount)
-        activeCosts += b.activeInv > 0 ? b.activeInv : 0;
+        activeCosts += b.amountUSDT;
       } else if (isRunning) {
-        // Still running - USDT is locked in DI
         usdtLocked += b.amountUSDT;
       }
-    } else if (isSell) {
-      if (isHit) {
-        // Sold the coins. Subtract from units.
-        if (b.crypto === 'BTC') btcUnits -= b.units;
-        else if (b.crypto === 'ETH') ethUnits -= b.units;
-        
-        // Find matching buy to calculate Realized Profit
-        const buyMatch = _allBoxes.find(x => x.type.toLowerCase() === 'buy' && x.name === b.name);
-        if (buyMatch) realizedPnL += (b.amountUSDT - buyMatch.amountUSDT);
-      }
-      // If sell is running or refunded, the coins stay in units (they were never removed)
+    } else if (isSell && isHit) {
+      liquidCash += b.amountUSDT; // Add sell proceeds back to liquid pool
+      if (b.crypto === 'BTC') btcUnits -= b.units;
+      else if (b.crypto === 'ETH') ethUnits -= b.units;
+      
+      const originalCost = buyCostMap[b.name] || 0;
+      activeCosts -= originalCost; // Remove cost basis once sold
+      realizedPnL += (b.amountUSDT - originalCost);
     }
   });
 
-  // Add APR coins
+  // Integrate APR coins into holdings
   btcUnits += aprBTCcoins;
   ethUnits += aprETHcoins;
 
@@ -768,25 +768,25 @@ function render() {
   const btcUSD = btcUnits * (_btc || 0);
   const ethUSD = ethUnits * (_eth || 0);
   const aprTotalUSD = aprUSDT + (aprBTCcoins * (_btc || 0)) + (aprETHcoins * (_eth || 0));
+  const aprBTCusd = aprBTCcoins * (_btc || 0);
+  const aprETHusd = aprETHcoins * (_eth || 0);
 
-  // Ledger calculation for Idle Cash
-  // Idle Cash = Total Invested + Realized PnL + APR USDT - (Cost of currently held units) - (Locked USDT)
-  const idleCash = totalInvested + realizedPnL + aprUSDT - activeCosts - usdtLocked;
-
-  const totalValue = btcUSD + ethUSD + usdtLocked + idleCash + (aprTotalUSD - aprUSDT); 
-  // Wait, totalValue = btcUSD + ethUSD + usdtLocked + idleCash + (Value of APR coins)
-  // Let's simplify: totalValue = totalInvested + totalApr + Realized + Unrealized
+  // Idle Cash is our remaining Liquid pool
+  const idleCash = liquidCash;
   const unrealizedGain = (btcUSD + ethUSD) - activeCosts;
   
-  // Final total value formula:
-  const finalValue = totalInvested + aprTotalUSD + realizedPnL + unrealizedGain;
+  // Total Value = Liquid Cash + Locked + Crypto Market Value
+  const finalValue = liquidCash + usdtLocked + btcUSD + ethUSD;
 
-  // CAGR
-  let cagr = 0;
-  if (firstDate && totalInvested > 0 && finalValue > 0) {
+  // CAGR Calculation
+  let cagr = 0, cagrAPR = 0;
+  if (firstDate && totalInjected > 0 && finalValue > 0) {
     const days = Math.max(1, (Date.now() - firstDate.getTime()) / 86400000);
-    const ratio = finalValue / totalInvested;
+    const ratio = finalValue / totalInjected;
     if (ratio > 0) cagr = (Math.pow(ratio, 365 / days) - 1) * 100;
+    
+    const ratioAPR = (totalInjected + aprTotalUSD) / totalInjected;
+    if (ratioAPR > 0) cagrAPR = (Math.pow(ratioAPR, 365 / days) - 1) * 100;
   }
 
   // ── Left Panel ───────────────────────────────────────────────
@@ -796,8 +796,8 @@ function render() {
   setText('v-eth-coins',      ethUnits.toFixed(4) + ' ETH', '');
   setText('v-eth-usd',        '≈ $' + fd(ethUSD),         '');
   setText('v-usdt',           '$' + fd(usdtLocked),       '');
-  setText('v-idle-cash',      '$' + fd(idleCash),         'gold');
-  setText('v-inv',            '$' + fd(totalInvested),     '');
+  setText('v-idle-cash',      '$' + fd(idleCash),         idleCash < 0 ? 'neg' : 'gold');
+  setText('v-inv',            '$' + fd(totalInjected),     '');
   setText('v-apr-earned-top', '+$' + fd(aprTotalUSD),      'pos');
   setText('v-profit-realized', (realizedPnL >= 0 ? '+$' : '-$') + fd(Math.abs(realizedPnL)), realizedPnL >= 0 ? 'pos' : 'neg');
   setText('v-gain',           (unrealizedGain >= 0 ? '+$' : '-$') + fd(Math.abs(unrealizedGain)), unrealizedGain >= 0 ? 'pos' : 'neg');
@@ -811,6 +811,7 @@ function render() {
   setText('v-aprb-usd',    '≈ $' + fd(aprBTCusd),        'pos');
   setText('v-apr-total',   '+$' + fd(aprTotalUSD),       'pos');
   setText('v-cagr-apr',    cagrAPR.toFixed(1) + '%',     cagrAPR >= 0 ? 'pos' : 'neg');
+
 
   // Accumulate banners (Buy rows only, below threshold, still active)
   const accBtc = buys.filter(b => b.crypto==='BTC' && b.entryPrice < BTC_BELOW && b.activeInv > 0);
@@ -1036,40 +1037,54 @@ function showTab(tab) {
 
 function renderAnalysis() {
   if (!_allBoxes.length || !_firstDate) return;
-  let firstDate = _firstDate;
   const btcP = _btc || 0, ethP = _eth || 0;
-  
-  // Section 1: Portfolio Summary
-  const totalCap = _manualInv || _allBoxes.filter(b=>b.type.toLowerCase()==='buy' && !b.refunded).reduce((s,b)=>s+b.amountUSDT, 0);
-  const totalApr = _allBoxes.reduce((s,b)=>s+b.aprUSDT + (b.crypto==='BTC'?b.aprCoin*btcP : b.crypto==='ETH'?b.aprCoin*ethP : 0), 0);
-  
-  const btcUnits = _allBoxes.reduce((s,b) => (b.type.toLowerCase()==='buy' && b.hit ? s+b.units : (b.type.toLowerCase()==='sell' && b.hit ? s-b.units : s)), 0) + _allBoxes.reduce((s,b)=>s+(b.crypto==='BTC'?b.aprCoin:0), 0);
-  const ethUnits = _allBoxes.reduce((s,b) => (b.type.toLowerCase()==='buy' && b.hit ? s+b.units : (b.type.toLowerCase()==='sell' && b.hit ? s-b.units : s)), 0) + _allBoxes.reduce((s,b)=>s+(b.crypto==='ETH'?b.aprCoin:0), 0);
-  
-  const btcUSD = btcUnits * btcP;
-  const ethUSD = ethUnits * ethP;
-  const activeCosts = _allBoxes.reduce((s,b) => (b.type.toLowerCase()==='buy' && b.hit ? s+b.activeInv : s), 0);
-  const usdtLocked = _allBoxes.reduce((s,b) => (b.type.toLowerCase()==='buy' && !b.hit && !b.refunded ? s+b.amountUSDT : s), 0);
-  
-  // Realized PnL for Analysis
-  const realizedPnL = _allBoxes.reduce((s,b) => {
-    if (b.type.toLowerCase()==='sell' && b.hit) {
-      const buyMatch = _allBoxes.find(x => x.type.toLowerCase() === 'buy' && x.name === b.name);
-      return buyMatch ? s + (b.amountUSDT - buyMatch.amountUSDT) : s;
+
+  const totalInjected = _manualInv > 0 ? _manualInv : _allBoxes.filter(b => b.type.toLowerCase() === 'buy' && !b.refunded && !b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
+
+  let aprUSDT = 0, aprBTCcoins = 0, aprETHcoins = 0;
+  _allBoxes.forEach(b => {
+    aprUSDT += b.aprUSDT;
+    if (b.crypto === 'BTC') aprBTCcoins += b.aprCoin;
+    if (b.crypto === 'ETH') aprETHcoins += b.aprCoin;
+  });
+
+  let btcUnits = 0, ethUnits = 0, activeCosts = 0, usdtLocked = 0, realizedPnL = 0;
+  let liquidCash = totalInjected + aprUSDT;
+  const buyCostMap = {}; 
+  _allBoxes.filter(b => b.type.toLowerCase()==='buy').forEach(b => { buyCostMap[b.name] = b.amountUSDT; });
+
+  _allBoxes.forEach(b => {
+    const isHit = b.hit, isRunning = !b.hit && !b.refunded;
+    const isBuy = b.type.toLowerCase() === 'buy', isSell = b.type.toLowerCase() === 'sell';
+
+    if (isBuy && !b.refunded) {
+      if (!b.aprFunded) liquidCash -= b.amountUSDT;
+      if (isHit) {
+        if (b.crypto === 'BTC') btcUnits += b.units; else if (b.crypto === 'ETH') ethUnits += b.units;
+        activeCosts += b.amountUSDT;
+      } else if (isRunning) usdtLocked += b.amountUSDT;
+    } else if (isSell && isHit) {
+      liquidCash += b.amountUSDT;
+      if (b.crypto === 'BTC') btcUnits -= b.units; else if (b.crypto === 'ETH') ethUnits -= b.units;
+      const oCost = buyCostMap[b.name] || 0;
+      activeCosts -= oCost;
+      realizedPnL += (b.amountUSDT - oCost);
     }
-    return s;
-  }, 0);
+  });
 
+  const btcUSD = (btcUnits + aprBTCcoins) * btcP;
+  const ethUSD = (ethUnits + aprETHcoins) * ethP;
+  const totalAprValue = aprUSDT + (aprBTCcoins * btcP) + (aprETHcoins * ethP);
   const unrealizedGain = (btcUSD + ethUSD) - activeCosts;
-  const totalVal = totalCap + totalApr + realizedPnL + unrealizedGain;
-  const depPct = (activeCosts / totalCap) * 100;
+  const totalVal = liquidCash + usdtLocked + btcUSD + ethUSD;
+  const depPct = (activeCosts / totalInjected) * 100;
 
-  document.getElementById('a-inv').textContent = '$' + f(totalCap);
-  document.getElementById('a-apr').textContent = '+$' + fd(totalApr);
+  document.getElementById('a-inv').textContent = '$' + f(totalInjected);
+  document.getElementById('a-apr').textContent = '+$' + fd(totalAprValue);
   document.getElementById('a-active').textContent = '$' + f(activeCosts);
-  document.getElementById('a-idle').textContent = '$' + f(totalCap - activeCosts - usdtLocked);
+  document.getElementById('a-idle').textContent = '$' + f(liquidCash);
   document.getElementById('a-dep').textContent = depPct.toFixed(1) + '%';
-  document.getElementById('a-dep-bar').style.width = depPct + '%';
+  document.getElementById('a-dep-bar').style.width = Math.min(100, depPct) + '%';
 
   // Section 2: Daily Income
   const dIncome = _allBoxes.filter(b=>b.days===1).reduce((s,b)=>s+b.aprUSDT + (b.crypto==='BTC'?b.aprCoin*btcP : b.crypto==='ETH'?b.aprCoin*ethP : 0), 0);
@@ -1082,7 +1097,7 @@ function renderAnalysis() {
   const hits = _allBoxes.filter(b=>b.hit).length;
   const totalFin = _allBoxes.filter(b=>b.hit || b.refunded).length;
   const winRate = totalFin ? (hits / totalFin) * 100 : 0;
-  const avgRet = _allBoxes.length ? totalApr / _allBoxes.length : 0;
+  const avgRet = _allBoxes.length ? totalAprValue / _allBoxes.length : 0;
   const avgDays = avg(_allBoxes.map(b=>b.days));
   document.getElementById('a-winrate').textContent = winRate.toFixed(1) + '%';
   document.getElementById('a-avgret').textContent = '$' + fd(avgRet);
