@@ -682,7 +682,7 @@ function parseAll(text) {
         aprUSDT:    isRunning ? 0 : num(c[10]),
         aprCoin:    isRunning ? 0 : num(c[11]),
         activeInv:  num(c[12]),
-        aprFunded:  clean(c[13]).toUpperCase() === 'TRUE',
+        aprFunded:  ['TRUE', 'YES', 'Y', '1'].includes(clean(c[13]).toUpperCase()),
     });
   });
 
@@ -713,7 +713,8 @@ function render() {
 
   // ── Totals ──────────────────────────────────────────────────
   // ── Totals ──────────────────────────────────────────────────
-  const totalInjected = _manualInv > 0 ? _manualInv : buys.filter(b => !b.refunded && !b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
+  const sumOfBuyCosts = buys.filter(b => !b.refunded && !b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
+  const totalInjected = Math.max(_manualInv, sumOfBuyCosts);
 
   let aprUSDT = 0, aprBTCcoins = 0, aprETHcoins = 0;
   _allBoxes.forEach(b => {
@@ -834,7 +835,7 @@ function render() {
     : `<div style="color:var(--muted);font-size:12px">Add boxes to your sheet to see recommendations.</div>`;
 
   // Monthly performance
-  const historyData = renderMonthly(freshCapital, _firstDate);
+  const historyData = renderMonthly(totalInjected, _firstDate);
   updateChart(historyData);
   renderAnalysis();
 
@@ -1039,7 +1040,8 @@ function renderAnalysis() {
   if (!_allBoxes.length || !_firstDate) return;
   const btcP = _btc || 0, ethP = _eth || 0;
 
-  const totalInjected = _manualInv > 0 ? _manualInv : _allBoxes.filter(b => b.type.toLowerCase() === 'buy' && !b.refunded && !b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
+  const sumOfBuyCosts = _allBoxes.filter(b => b.type.toLowerCase() === 'buy' && !b.refunded && !b.aprFunded).reduce((s,b) => s + b.amountUSDT, 0);
+  const totalInjected = Math.max(_manualInv, sumOfBuyCosts);
 
   let aprUSDT = 0, aprBTCcoins = 0, aprETHcoins = 0;
   _allBoxes.forEach(b => {
