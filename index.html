@@ -196,48 +196,88 @@
     .chart-container { height:220px; width:100%; margin-top:10px; }
     .chart-header-metrics { display:flex; gap:12px; margin-top:-6px; margin-bottom:10px; font-size:10px; font-weight:600; border-bottom:1px solid var(--border); padding-bottom:8px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
 
-    /* NO-SCROLL LAYOUT (Desktop) */
-    @media (min-width: 769px) {
+    /* NO-SCROLL TERMINAL LAYOUT */
+    @media (min-width: 900px) {
       html, body { height: 100vh; overflow: hidden; margin:0; padding:0; }
-      .topbar { flex-shrink: 0; padding: 0 16px; height: 44px; }
-      .main { height: calc(100vh - 44px); overflow: hidden; display: grid; grid-template-columns: 240px 1fr; grid-template-rows: 100%; }
-      .left { height: 100%; overflow-y: auto; padding: 10px; scrollbar-width: thin; }
-      .right { height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 10px; }
-      .card-chart { flex-shrink: 0; height: 280px; padding: 10px; }
-      .card-table { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px; }
-      .tbl-wrap { flex-grow: 1; overflow-y: auto; min-height: 0; border: 1px solid var(--border2); border-radius: 6px; }
-      .left::-webkit-scrollbar, .tbl-wrap::-webkit-scrollbar, .analysis-view::-webkit-scrollbar { width: 4px; }
-      .left::-webkit-scrollbar-thumb, .tbl-wrap::-webkit-scrollbar-thumb, .analysis-view::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+      .topbar { flex-shrink: 0; padding: 0 16px; height: 44px; display: flex; align-items: center; border-bottom: 1px solid var(--border); }
+      .main { height: calc(100vh - 44px); overflow: hidden; display: grid; grid-template-columns: 240px 1fr; }
+      .left { height: 100%; overflow-y: auto; padding: 12px; border-right: 1px solid var(--border); scrollbar-width: thin; }
+      .right { height: 100%; overflow: hidden; display: flex; flex-direction: column; padding: 12px; gap: 12px; }
+      .card-chart { flex-shrink: 0; height: 260px; padding: 12px; box-sizing: border-box; }
+      .card-table { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; padding: 12px; box-sizing: border-box; }
+      .tbl-wrap { flex-grow: 1; overflow-y: auto; min-height: 0; border: 1px solid var(--border2); border-radius: 4px; }
     }
 
-    /* ANALYSIS DASHBOARD TERMINAL GRID */
-    .analysis-view { display:none; padding:10px 15px; background:var(--analysis-bg); height: calc(100vh - 44px); overflow-y: auto; }
+    /* ANALYSIS GRID - MASONRY/TERMINAL STYLE */
+    .analysis-view { display:none; padding:12px; background:#0b0e14; height: calc(100vh - 44px); overflow-y: auto; }
     .analysis-grid { 
       display: grid; 
-      gap: 8px; 
-      max-width: 100%; 
-      margin: 0 auto; 
+      gap: 12px; 
       grid-template-columns: repeat(4, 1fr); 
-      align-items: start; 
+      grid-auto-rows: min-content;
+      align-items: stretch;
     }
-    @media (max-width: 1200px) { .analysis-grid { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 900px) { .analysis-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 1400px) { .analysis-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 1000px) { .analysis-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 600px) { .analysis-grid { grid-template-columns: 1fr; } }
 
-    .acard { background:var(--analysis-card); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:10px; display: flex; flex-direction: column; gap: 4px; }
-    .acard-title { font-size:8.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; display:flex; align-items:center; gap:4px; margin-bottom:2px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 3px; }
-    .ametric { display:flex; justify-content: space-between; align-items: center; padding: 1px 0; }
-    .ametric-label { font-size:9.5px; color:var(--muted); font-weight: 500; }
-    .ametric-val { font-size:15px; font-weight:800; color:var(--text); text-align: right; }
-    .ametric-sub { font-size:9px; color:var(--muted); display: block; margin-top: -1px; opacity: 0.7; width: 100%; text-align: right; }
-    .aneon-g { color:#22c55e; } .aneon-r { color:#ef4444; } .aneon-c { color:#06b6d4; }
-    .abar-wrap { height:3px; background:rgba(255,255,255,0.05); border-radius:1.5px; margin-top:2px; overflow:hidden; width: 100%; }
-    .abar { height:100%; border-radius:1.5px; }
-    .alist { list-style:none; display:flex; flex-direction:column; gap:3px; }
-    .alist-item { display:flex; justify-content:space-between; padding:4px 6px; background:rgba(255,255,255,0.02); border-radius:4px; border:1px solid rgba(255,255,255,0.05); font-size: 9.5px; }
-    .goal-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text); padding:1px 4px; border-radius:4px; width:60px; font-family:inherit; font-weight:700; font-size: 9.5px; }
+    .acard { 
+      background:rgba(30, 41, 59, 0.4); 
+      border:1px solid rgba(255,255,255,0.08); 
+      border-radius:8px; 
+      padding:12px; 
+      display: flex; 
+      flex-direction: column; 
+      backdrop-filter: blur(10px);
+      transition: border-color 0.2s;
+    }
+    .acard:hover { border-color: rgba(255,255,255,0.2); }
+    .acard-title { 
+      font-size:9px; 
+      font-weight:800; 
+      color:rgba(255,255,255,0.4); 
+      text-transform:uppercase; 
+      letter-spacing:1.2px; 
+      display:flex; 
+      align-items:center; 
+      gap:8px; 
+      margin-bottom:10px; 
+      border-bottom: 1px solid rgba(255,255,255,0.05); 
+      padding-bottom: 6px; 
+    }
+    .ametric { display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+    .ametric-label { font-size:10px; color:rgba(255,255,255,0.5); font-weight: 500; }
+    .ametric-val { font-size:18px; font-weight:800; color:#fff; font-family: 'JetBrains Mono', monospace; }
+    .ametric-sub { font-size:9px; color:rgba(255,255,255,0.4); text-align: right; width:100%; display:block; margin-top:-2px; }
     
-    .analysis-grid .tbl-wrap { max-height: 200px; }
+    .aneon-g { color:#10b981; } .aneon-r { color:#f43f5e; } .aneon-c { color:#0ea5e9; } .aneon-y { color:#f59e0b; }
+    
+    .abar-wrap { height:4px; background:rgba(255,255,255,0.05); border-radius:2px; margin: 8px 0; overflow:hidden; }
+    .abar { height:100%; border-radius:2px; background: var(--purple); }
+    
+    .alist { list-style:none; display:flex; flex-direction:column; gap:4px; }
+    .alist-item { 
+      display:flex; 
+      justify-content:space-between; 
+      padding:6px 8px; 
+      background:rgba(255,255,255,0.02); 
+      border-radius:4px; 
+      border:1px solid rgba(255,255,255,0.05); 
+      font-size: 10px; 
+    }
+    .goal-input { 
+      background:rgba(255,255,255,0.05); 
+      border:1px solid rgba(255,255,255,0.1); 
+      color:#fff; 
+      padding:2px 6px; 
+      border-radius:4px; 
+      width:70px; 
+      font-family: inherit; 
+      font-weight:700; 
+      font-size: 10px; 
+      text-align: right;
+    }
+    .analysis-view .tbl-wrap { border: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2); }
   </style>
   </style>
   </style>
@@ -271,7 +311,6 @@
 <div class="main" id="view-ledger">
   <div class="left">
 
-    <!-- Portfolio Value -->
     <div class="card card-portfolio">
       <div class="card-title">💼 Portfolio Value</div>
       <div class="mrow">
@@ -296,6 +335,10 @@
         <span class="mlabel">USDT Locked (in DI)</span>
         <div class="mval-wrap"><span class="mval" id="v-usdt">—</span></div>
       </div>
+      <div class="mrow">
+        <span class="mlabel">Idle / Realized Cash</span>
+        <div class="mval-wrap"><span class="mval gold" id="v-idle-cash">—</span></div>
+      </div>
       <div class="mdiv"></div>
       <div class="mrow">
         <span class="mlabel">Capital Invested</span>
@@ -306,12 +349,12 @@
         <div class="mval-wrap"><span class="mval pos" id="v-apr-earned-top">—</span></div>
       </div>
       <div class="mrow">
-        <span class="mlabel">Capital Gain / Loss</span>
-        <div class="mval-wrap"><span class="mval" id="v-gain">—</span><span class="msub" style="color:var(--muted)">excluding APR</span></div>
+        <span class="mlabel">Realized Profit / Loss</span>
+        <div class="mval-wrap"><span class="mval" id="v-profit-realized">—</span></div>
       </div>
       <div class="mrow">
-        <span class="mlabel">Cap Gain CAGR</span>
-        <div class="mval-wrap"><span class="mval" id="v-cagr-cap">—</span></div>
+        <span class="mlabel">Unrealized Cap Gain</span>
+        <div class="mval-wrap"><span class="mval" id="v-gain">—</span></div>
       </div>
       <div class="mrow">
         <span class="mlabel">Combined CAGR</span>
@@ -407,45 +450,52 @@
     <!-- PORFOLIO SUMMARY -->
     <div class="acard">
       <div class="acard-title">💼 Portfolio Summary</div>
-      <div class="ametric"><span class="ametric-label">Total Capital Invested</span><span class="ametric-val" id="a-inv">—</span></div>
-      <div class="ametric"><span class="ametric-label">Total APR Earned</span><span class="ametric-val aneon-g" id="a-apr">—</span></div>
-      <div class="ametric"><span class="ametric-label">Active Capital</span><span class="ametric-val" id="a-active">—</span></div>
-      <div class="ametric"><span class="ametric-label">Idle Capital</span><span class="ametric-val" id="a-idle">—</span></div>
-      <div class="ametric" style="flex-direction: column; align-items: stretch; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="ametric-label">Deployment %</span><span class="ametric-val aneon-c" id="a-dep">—</span>
+      <div class="ametric-wrap">
+        <div class="ametric"><span class="ametric-label">Total Capital Invested</span><span class="ametric-val" id="a-inv">—</span></div>
+        <div class="ametric"><span class="ametric-label">Total APR Earned</span><span class="ametric-val aneon-g" id="a-apr">—</span></div>
+        <div class="ametric"><span class="ametric-label">Active Capital</span><span class="ametric-val" id="a-active">—</span></div>
+        <div class="ametric"><span class="ametric-label">Idle Capital</span><span class="ametric-val" id="a-idle">—</span></div>
+        <div class="ametric" style="flex-direction: column; align-items: stretch; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="ametric-label">Deployment %</span><span class="ametric-val aneon-c" id="a-dep">—</span>
+          </div>
+          <div class="abar-wrap"><div class="abar" id="a-dep-bar" style="background:var(--analysis-cyan)"></div></div>
         </div>
-        <div class="abar-wrap"><div class="abar" id="a-dep-bar" style="background:var(--analysis-cyan)"></div></div>
       </div>
     </div>
 
     <!-- DAILY INCOME ENGINE -->
     <div class="acard">
       <div class="acard-title">⚡ Daily Income Engine</div>
-      <div class="ametric"><span class="ametric-label">Daily Income (Current)</span><span class="ametric-val aneon-g" id="a-daily">—</span><span class="ametric-sub">from 1-day trades</span></div>
-      <div class="ametric"><span class="ametric-label">7-Day Avg Income</span><span class="ametric-val" id="a-avg7">—</span></div>
-      <div class="ametric"><span class="ametric-label">Monthly Projection</span><span class="ametric-val aneon-g" id="a-proj30">—</span><span class="ametric-sub">Projected monthly income</span></div>
+      <div class="ametric-wrap">
+        <div class="ametric"><span class="ametric-label">Daily Income (Current)</span><span class="ametric-val aneon-g" id="a-daily">—</span></div>
+        <span class="ametric-sub">from 1-day trades</span>
+        <div class="ametric"><span class="ametric-label">7-Day Avg Income</span><span class="ametric-val" id="a-avg7">—</span></div>
+        <div class="ametric"><span class="ametric-label">Monthly Projection</span><span class="ametric-val aneon-g" id="a-proj30">—</span></div>
+      </div>
     </div>
 
     <!-- STRATEGY PERFORMANCE -->
     <div class="acard">
       <div class="acard-title">📊 Strategy Performance</div>
-      <div class="ametric"><span class="ametric-label">Win Rate (HIT %)</span><span class="ametric-val" id="a-winrate">—</span></div>
-      <div class="ametric"><span class="ametric-label">Avg Return per Trade</span><span class="ametric-val" id="a-avgret">—</span></div>
-      <div class="ametric"><span class="ametric-label">Avg Holding Days</span><span class="ametric-val" id="a-avgdays">—</span></div>
-      <div class="ametric"><span class="ametric-label">Return per Day</span><span class="ametric-val aneon-c" id="a-retdaily">—</span></div>
+      <div class="ametric-wrap">
+        <div class="ametric"><span class="ametric-label">Win Rate (HIT %)</span><span class="ametric-val" id="a-winrate">—</span></div>
+        <div class="ametric"><span class="ametric-label">Avg Return per Trade</span><span class="ametric-val" id="a-avgret">—</span></div>
+        <div class="ametric"><span class="ametric-label">Avg Holding Days</span><span class="ametric-val" id="a-avgdays">—</span></div>
+        <div class="ametric"><span class="ametric-label">Return per Day</span><span class="ametric-val aneon-c" id="a-retdaily">—</span></div>
+      </div>
     </div>
 
     <!-- ALLOCATION -->
     <div class="acard">
       <div class="acard-title">🥧 Crypto Allocation</div>
-      <div class="chart-container" style="height:240px">
+      <div class="chart-container" style="height:140px; margin-top: 0;">
         <canvas id="allocChart"></canvas>
       </div>
     </div>
 
     <!-- BOX PERFORMANCE -->
-    <div class="acard" style="grid-column: span 1.5">
+    <div class="acard wide-card">
       <div class="acard-title">📦 Box Performance (Top Earners)</div>
       <div id="a-boxlist" class="alist"></div>
     </div>
@@ -453,49 +503,56 @@
     <!-- REAL PROFIT & EFFICIENCY -->
     <div class="acard">
       <div class="acard-title">💎 Real Profit & Efficiency</div>
-      <div class="ametric"><span class="ametric-label">Total Realized Profit</span><span class="ametric-val aneon-g" id="a-profit">—</span></div>
-      <div class="ametric"><span class="ametric-label">Capital Efficiency</span><span class="ametric-val aneon-c" id="a-eff">—</span><span class="ametric-sub">APR Earned / Total Capital</span></div>
-      <div class="acard-title" style="margin:20px 0 10px; font-size:9px">⚠️ Risk Flags</div>
-      <div id="a-risklist" class="alist"></div>
+      <div class="ametric-wrap">
+        <div class="ametric"><span class="ametric-label">Total Realized Profit</span><span class="ametric-val aneon-g" id="a-profit">—</span></div>
+        <div class="ametric"><span class="ametric-label">Capital Efficiency</span><span class="ametric-val aneon-c" id="a-eff">—</span></div>
+        <span class="ametric-sub">APR Earned / Total Capital</span>
+        <div class="acard-title" style="margin:10px 0 5px; font-size:8px; border:none;">⚠️ Risk Flags</div>
+        <div id="a-risklist" class="alist" style="max-height: 60px;"></div>
+      </div>
     </div>
 
     <!-- MISSED OPPORTUNITY -->
     <div class="acard">
-      <div class="acard-title">💸 Missed Opportunity (SELLs)</div>
-      <div class="ametric"><span class="ametric-label">Total Missed Gains</span><span class="ametric-val aneon-r" id="a-missed-tot">—</span><span class="ametric-sub">Current Price - Sell Price</span></div>
-      <div id="a-missedlist" class="alist"></div>
+      <div class="acard-title">💸 Missed Opportunity</div>
+      <div class="ametric-wrap">
+        <div class="ametric"><span class="ametric-label">Total Missed Gains</span><span class="ametric-val aneon-r" id="a-missed-tot">—</span></div>
+        <div id="a-missedlist" class="alist" style="margin-top:5px;"></div>
+      </div>
     </div>
 
     <!-- GOAL TRACKER -->
     <div class="acard">
       <div class="acard-title">🎯 Goal Tracker</div>
-      <div class="ametric">
-        <span class="ametric-label">Target Goal (USD)</span>
-        <input type="number" id="a-goal-input" class="goal-input" value="100000" onchange="renderAnalysis()">
-      </div>
-      <div class="ametric" style="flex-direction: column; align-items: stretch; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="ametric-label">Progress</span><span class="ametric-val aneon-c" id="a-goal-prog">—</span>
+      <div class="ametric-wrap">
+        <div class="ametric">
+          <span class="ametric-label">Target Goal</span>
+          <input type="number" id="a-goal-input" class="goal-input" value="100000" onchange="renderAnalysis()">
         </div>
-        <div class="abar-wrap"><div class="abar" id="a-goal-bar" style="background:#06b6d4"></div></div>
+        <div class="ametric" style="flex-direction: column; align-items: stretch; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="ametric-label">Progress</span><span class="ametric-val aneon-c" id="a-goal-prog">—</span>
+          </div>
+          <div class="abar-wrap"><div class="abar" id="a-goal-bar" style="background:#06b6d4"></div></div>
+        </div>
+        <div class="ametric"><span class="ametric-label">Years to Goal</span><span class="ametric-val" id="a-goal-eta">—</span></div>
       </div>
-      <div class="ametric"><span class="ametric-label">Years to Goal</span><span class="ametric-val" id="a-goal-eta">—</span></div>
-      <span class="ametric-sub" style="display: block; text-align: right; width: 100%;">at current portfolio CAGR</span>
     </div>
 
     <!-- PROJECTION ENGINE -->
     <div class="acard">
       <div class="acard-title">📈 Projection Engine</div>
-      <div class="alist">
-        <div class="alist-item"><span>30 Days</span><b id="a-p30">—</b></div>
-        <div class="alist-item"><span>90 Days</span><b id="a-p90">—</b></div>
-        <div class="alist-item"><span>1 Year</span><b class="aneon-g" id="a-p365">—</b></div>
+      <div class="ametric-wrap">
+        <div class="alist">
+          <div class="alist-item"><span>30 Days</span><b id="a-p30">—</b></div>
+          <div class="alist-item"><span>1 Year</span><b class="aneon-g" id="a-p365">—</b></div>
+        </div>
+        <div class="ametric" style="margin-top:8px"><span class="ametric-label">Estimated Yearly Income</span><span class="ametric-val" id="a-passive-y">—</span></div>
       </div>
-      <div class="ametric" style="margin-top:15px"><span class="ametric-label">Daily Passive Income (Est)</span><span class="ametric-val" id="a-passive-y">—</span><span class="ametric-sub" id="a-passive-m">—</span></div>
     </div>
 
     <!-- DECISION SUPPORT -->
-    <div class="acard" style="grid-column: 1 / -1">
+    <div class="acard full-card">
       <div class="acard-title">🚦 Decision Support (Active Trades)</div>
       <div class="tbl-wrap">
         <table id="a-active-tbl">
@@ -655,12 +712,8 @@ function render() {
   const buys = _allBoxes.filter(b => b.type.toLowerCase() === 'buy');
 
   // ── Totals ──────────────────────────────────────────────────
-  // Use manually tracked capital invested from the sheet if available, else fallback
-  const fallbackCapital = buys.filter(b => !b.refunded).reduce((s,b) => s + b.amountUSDT, 0);
-  const totalInvested = _manualInv > 0 ? _manualInv : fallbackCapital;
-  const freshCapital = totalInvested; // For monthly cagr logic
+  const totalInvested = _manualInv > 0 ? _manualInv : buys.filter(b => !b.refunded).reduce((s,b) => s + b.amountUSDT, 0);
 
-  // ── APR from ALL rows (Buy, Sell, APR-funded — everything earns APR) ──
   let aprUSDT = 0, aprBTCcoins = 0, aprETHcoins = 0;
   _allBoxes.forEach(b => {
     aprUSDT += b.aprUSDT;
@@ -668,75 +721,86 @@ function render() {
     if (b.crypto === 'ETH') aprETHcoins += b.aprCoin;
   });
 
-  let btcCoins = 0, btcUSD = 0;
-  let ethCoins = 0, ethUSD = 0;
+  // Calculate Net Units (Sum of Buy Hits - Sum of Sell Hits + APR Coins)
+  // For 'Sell' trades, if not hit yet, the units are still yours but locked.
+  let btcUnits = 0, ethUnits = 0;
+  let activeCosts = 0;
   let usdtLocked = 0;
+  let realizedPnL = 0;
 
-  buys.forEach(b => {
-    if (b.activeInv > 0 && b.entryPrice > 0) {
-      // Settled position — active inventory is in USDT, convert to coins
-      const coins = b.activeInv / b.entryPrice;
-      if (b.crypto === 'BTC') {
-        btcCoins += coins;
-        btcUSD   += coins * (_btc || b.entryPrice);
-      } else if (b.crypto === 'ETH') {
-        ethCoins += coins;
-        ethUSD   += coins * (_eth || b.entryPrice);
+  // Process all boxes to find realized PnL and net holdings
+  _allBoxes.forEach(b => {
+    const isHit = b.hit;
+    const isRunning = !b.hit && !b.refunded;
+    const isBuy = b.type.toLowerCase() === 'buy';
+    const isSell = b.type.toLowerCase() === 'sell';
+
+    if (isBuy) {
+      if (isHit) {
+        // We have the coins. Add to units.
+        if (b.crypto === 'BTC') btcUnits += b.units;
+        else if (b.crypto === 'ETH') ethUnits += b.units;
+        // Tracking cost basis for active holdings (using Active Inventory if provided, else original amount)
+        activeCosts += b.activeInv > 0 ? b.activeInv : 0;
+      } else if (isRunning) {
+        // Still running - USDT is locked in DI
+        usdtLocked += b.amountUSDT;
       }
-    } else if (!b.hit && !b.refunded && b.amountUSDT > 0) {
-      // Still running — USDT is locked in DI, count as USDT holding
-      usdtLocked += b.amountUSDT;
-    }
-
-    // Earliest date for CAGR from boxes
-    if (b.date) {
-      const d = new Date(b.date);
-      if (!firstDate || d < firstDate) firstDate = d;
+    } else if (isSell) {
+      if (isHit) {
+        // Sold the coins. Subtract from units.
+        if (b.crypto === 'BTC') btcUnits -= b.units;
+        else if (b.crypto === 'ETH') ethUnits -= b.units;
+        
+        // Find matching buy to calculate Realized Profit
+        const buyMatch = _allBoxes.find(x => x.type.toLowerCase() === 'buy' && x.name === b.name);
+        if (buyMatch) realizedPnL += (b.amountUSDT - buyMatch.amountUSDT);
+      }
+      // If sell is running or refunded, the coins stay in units (they were never removed)
     }
   });
 
-  // Include manual investment dates in firstDate
-  _manualInvs.forEach(m => {
-    if (!firstDate || m.date < firstDate) firstDate = m.date;
-  });
+  // Add APR coins
+  btcUnits += aprBTCcoins;
+  ethUnits += aprETHcoins;
 
-  // APR in USD terms
-  const aprBTCusd  = aprBTCcoins * (_btc || 0);
-  const aprETHusd  = aprETHcoins * (_eth || 0);
-  const aprTotalUSD = aprUSDT + aprBTCusd + aprETHusd;
+  // Values
+  const btcUSD = btcUnits * (_btc || 0);
+  const ethUSD = ethUnits * (_eth || 0);
+  const aprTotalUSD = aprUSDT + (aprBTCcoins * (_btc || 0)) + (aprETHcoins * (_eth || 0));
 
-  // Total value = all current holdings + USDT locked in DI + ALL APR earned
-  const totalValue = btcUSD + ethUSD + usdtLocked + aprTotalUSD;
+  // Ledger calculation for Idle Cash
+  // Idle Cash = Total Invested + Realized PnL + APR USDT - (Cost of currently held units) - (Locked USDT)
+  const idleCash = totalInvested + realizedPnL + aprUSDT - activeCosts - usdtLocked;
 
-  // Capital gain = Total Value - Capital Invested - Total APR
-  const capGain = totalValue - totalInvested - aprTotalUSD;
+  const totalValue = btcUSD + ethUSD + usdtLocked + idleCash + (aprTotalUSD - aprUSDT); 
+  // Wait, totalValue = btcUSD + ethUSD + usdtLocked + idleCash + (Value of APR coins)
+  // Let's simplify: totalValue = totalInvested + totalApr + Realized + Unrealized
+  const unrealizedGain = (btcUSD + ethUSD) - activeCosts;
+  
+  // Final total value formula:
+  const finalValue = totalInvested + aprTotalUSD + realizedPnL + unrealizedGain;
 
   // CAGR
-  let cagr = 0, cagrAPR = 0, cagrCap = 0;
-  if (firstDate && totalInvested > 0 && totalValue > 0) {
+  let cagr = 0;
+  if (firstDate && totalInvested > 0 && finalValue > 0) {
     const days = Math.max(1, (Date.now() - firstDate.getTime()) / 86400000);
-    
-    const ratioTotal = totalValue / totalInvested;
-    if (ratioTotal > 0) cagr = (Math.pow(ratioTotal, 365 / days) - 1) * 100;
-    
-    const ratioAPR = (totalInvested + aprTotalUSD) / totalInvested;
-    if (ratioAPR > 0) cagrAPR = (Math.pow(ratioAPR, 365 / days) - 1) * 100;
-
-    const ratioCap = (totalInvested + capGain) / totalInvested;
-    if (ratioCap > 0) cagrCap = (Math.pow(ratioCap, 365 / days) - 1) * 100;
+    const ratio = finalValue / totalInvested;
+    if (ratio > 0) cagr = (Math.pow(ratio, 365 / days) - 1) * 100;
   }
 
   // ── Left Panel ───────────────────────────────────────────────
-  setText('v-total',          '$' + fd(totalValue),      '');
-  setText('v-btc-coins',      btcCoins.toFixed(6) + ' BTC', '');
+  setText('v-total',          '$' + fd(finalValue),      '');
+  setText('v-btc-coins',      btcUnits.toFixed(6) + ' BTC', '');
   setText('v-btc-usd',        '≈ $' + fd(btcUSD),         '');
-  setText('v-eth-coins',      ethCoins.toFixed(4) + ' ETH', '');
+  setText('v-eth-coins',      ethUnits.toFixed(4) + ' ETH', '');
   setText('v-eth-usd',        '≈ $' + fd(ethUSD),         '');
   setText('v-usdt',           '$' + fd(usdtLocked),       '');
+  setText('v-idle-cash',      '$' + fd(idleCash),         'gold');
   setText('v-inv',            '$' + fd(totalInvested),     '');
   setText('v-apr-earned-top', '+$' + fd(aprTotalUSD),      'pos');
-  setText('v-gain',           (capGain >= 0 ? '+$' : '-$') + fd(Math.abs(capGain)), capGain >= 0 ? 'pos' : 'neg');
-  setText('v-cagr-cap',       cagrCap.toFixed(1) + '%', cagrCap >= 0 ? 'pos' : 'neg');
+  setText('v-profit-realized', (realizedPnL >= 0 ? '+$' : '-$') + fd(Math.abs(realizedPnL)), realizedPnL >= 0 ? 'pos' : 'neg');
+  setText('v-gain',           (unrealizedGain >= 0 ? '+$' : '-$') + fd(Math.abs(unrealizedGain)), unrealizedGain >= 0 ? 'pos' : 'neg');
   setText('v-cagr',           cagr.toFixed(1) + '%',    cagr >= 0 ? 'gold' : 'neg');
 
   // APR panel
@@ -978,14 +1042,32 @@ function renderAnalysis() {
   // Section 1: Portfolio Summary
   const totalCap = _manualInv || _allBoxes.filter(b=>b.type.toLowerCase()==='buy' && !b.refunded).reduce((s,b)=>s+b.amountUSDT, 0);
   const totalApr = _allBoxes.reduce((s,b)=>s+b.aprUSDT + (b.crypto==='BTC'?b.aprCoin*btcP : b.crypto==='ETH'?b.aprCoin*ethP : 0), 0);
-  const activeCap = _allBoxes.reduce((s,b)=>s+b.activeInv, 0);
-  const idleCap = totalCap - activeCap;
-  const depPct = (activeCap / totalCap) * 100;
+  
+  const btcUnits = _allBoxes.reduce((s,b) => (b.type.toLowerCase()==='buy' && b.hit ? s+b.units : (b.type.toLowerCase()==='sell' && b.hit ? s-b.units : s)), 0) + _allBoxes.reduce((s,b)=>s+(b.crypto==='BTC'?b.aprCoin:0), 0);
+  const ethUnits = _allBoxes.reduce((s,b) => (b.type.toLowerCase()==='buy' && b.hit ? s+b.units : (b.type.toLowerCase()==='sell' && b.hit ? s-b.units : s)), 0) + _allBoxes.reduce((s,b)=>s+(b.crypto==='ETH'?b.aprCoin:0), 0);
+  
+  const btcUSD = btcUnits * btcP;
+  const ethUSD = ethUnits * ethP;
+  const activeCosts = _allBoxes.reduce((s,b) => (b.type.toLowerCase()==='buy' && b.hit ? s+b.activeInv : s), 0);
+  const usdtLocked = _allBoxes.reduce((s,b) => (b.type.toLowerCase()==='buy' && !b.hit && !b.refunded ? s+b.amountUSDT : s), 0);
+  
+  // Realized PnL for Analysis
+  const realizedPnL = _allBoxes.reduce((s,b) => {
+    if (b.type.toLowerCase()==='sell' && b.hit) {
+      const buyMatch = _allBoxes.find(x => x.type.toLowerCase() === 'buy' && x.name === b.name);
+      return buyMatch ? s + (b.amountUSDT - buyMatch.amountUSDT) : s;
+    }
+    return s;
+  }, 0);
+
+  const unrealizedGain = (btcUSD + ethUSD) - activeCosts;
+  const totalVal = totalCap + totalApr + realizedPnL + unrealizedGain;
+  const depPct = (activeCosts / totalCap) * 100;
 
   document.getElementById('a-inv').textContent = '$' + f(totalCap);
   document.getElementById('a-apr').textContent = '+$' + fd(totalApr);
-  document.getElementById('a-active').textContent = '$' + f(activeCap);
-  document.getElementById('a-idle').textContent = '$' + f(idleCap);
+  document.getElementById('a-active').textContent = '$' + f(activeCosts);
+  document.getElementById('a-idle').textContent = '$' + f(totalCap - activeCosts - usdtLocked);
   document.getElementById('a-dep').textContent = depPct.toFixed(1) + '%';
   document.getElementById('a-dep-bar').style.width = depPct + '%';
 
@@ -1064,7 +1146,6 @@ function renderAnalysis() {
 
   // Section 9: Goal Tracker
   const target = parseFloat(document.getElementById('a-goal-input').value) || 100000;
-  const totalVal = activeCap + idleCap + totalApr;
   const prog = (totalVal / target) * 100;
   document.getElementById('a-goal-prog').textContent = prog.toFixed(1) + '%';
   document.getElementById('a-goal-bar').style.width = Math.min(100, prog) + '%';
@@ -1089,12 +1170,13 @@ function renderAnalysis() {
   document.getElementById('a-passive-y').textContent = '$' + f(dIncome * 365) + ' / Year';
   document.getElementById('a-passive-m').textContent = '≈ $' + f(dIncome * 30) + ' / Month';
 
-  // Section 12: Decision Support
-  const activeBody = _allBoxes.filter(b=> !b.hit && !b.refunded && b.activeInv > 0).map(b=> {
+  // Section 12: Decision Support (Active Trades Only)
+  const activeBoxes = _allBoxes.filter(b => b.activeInv > 0 || (!b.hit && !b.refunded));
+  const activeBody = activeBoxes.map(b=> {
     const cur = b.crypto==='BTC'?btcP:ethP;
     const roi = (cur - b.entryPrice) / b.entryPrice * 100;
-    const ann = (roi / b.days) * 365;
-    const advice = roi > 2 ? '<span class="aneon-g">PROFIT</span>' : roi > 0 ? 'HOLD' : '<span class="aneon-r">WAIT</span>';
+    const ann = (roi / Math.max(1, b.days)) * 365;
+    const advice = roi > 1 ? '<span class="aneon-g">PROFIT</span>' : roi > -1 ? 'HOLD' : '<span class="aneon-r">WAIT</span>';
     return `<tr><td>${b.name}</td><td>$${f(b.entryPrice)}</td><td>$${f(cur)}</td><td class="${roi>=0?'pos':'neg'}">${roi.toFixed(1)}%</td><td style="color:var(--muted)">${ann.toFixed(0)}%</td><td>${advice}</td></tr>`;
   }).join('');
   document.getElementById('a-active-body').innerHTML = activeBody || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No active positions.</td></tr>';
