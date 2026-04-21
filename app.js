@@ -216,7 +216,8 @@ function processAndRender(rawData) {
 
     let totalInflows = 0;
     let totalOutflows = 0;
-    
+    let grossInflowsForAvg = 0;
+
     let timeSeriesDates = [];
     let timeSeriesValues = [];
     let timeSeriesCostBasis = [];
@@ -230,6 +231,8 @@ function processAndRender(rawData) {
 
     for (let i = 0; i < trueLedgerData.length; i++) {
         const d = trueLedgerData[i];
+        
+        grossInflowsForAvg += d.inflow;
 
         if (i > 0) {
             totalInflows += d.inflow;
@@ -266,7 +269,7 @@ function processAndRender(rawData) {
 
     const msPerDay = 1000 * 60 * 60 * 24;
     const daysElapsed = Math.max(1, (latest.dateObj - day1.dateObj) / msPerDay);
-    const avgDailyInflow = totalInflows / daysElapsed;
+    const avgDailyInflow = grossInflowsForAvg / daysElapsed;
 
     const currentDrawdownPct = allTimeHigh > 0 ? (latest.totalValue - allTimeHigh) / allTimeHigh : 0;
     const cashValue = latest.usdtBal + latest.usdcBal;
