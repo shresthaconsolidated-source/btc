@@ -268,7 +268,8 @@ function processAndRender(rawData) {
     let timeSeries7DayMA = compute7DayMA(timeSeriesValues);
 
     const msPerDay = 1000 * 60 * 60 * 24;
-    const daysElapsed = Math.max(1, (latest.dateObj - day1.dateObj) / msPerDay);
+    // Add 1 to represent the inclusive number of calendar dates tracked
+    const daysElapsed = Math.max(1, ((latest.dateObj - day1.dateObj) / msPerDay) + 1);
     const avgDailyInflow = grossInflowsForAvg / daysElapsed;
 
     const currentDrawdownPct = allTimeHigh > 0 ? (latest.totalValue - allTimeHigh) / allTimeHigh : 0;
