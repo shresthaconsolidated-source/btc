@@ -436,7 +436,13 @@ function processAndRender(rawData) {
 function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     if (data.length < 2) return;
 
-    // 1. Smart CAGR via Mean Logarithmic Return
+    // 1. Logic Smoothing & Confidence
+    // If data points are few, we treat projections with lower confidence.
+    const confidenceScore = Math.min(1, data.length / 30); // 30 days for full confidence
+    document.getElementById('ml-confidence-fill').style.width = (confidenceScore * 100) + '%';
+    document.getElementById('intel-avg-inflow').textContent = fCur.format(avgInflow) + ' /day';
+
+    // 2. Smart CAGR via Mean Logarithmic Return
     let logReturns = [];
     for (let i = 1; i < data.length; i++) {
         const prev = data[i-1];
@@ -446,7 +452,9 @@ function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     }
 
     const meanLogReturn = logReturns.reduce((a, b) => a + b, 0) / logReturns.length;
-    const smartCAGR = Math.exp(meanLogReturn * 365) - 1;
+    let smartCAGR = Math.exp(meanLogReturn * 365) - 1;
+    
+    // Stability Factor
     const variance = logReturns.reduce((a, b) => a + Math.pow(b - meanLogReturn, 2), 0) / logReturns.length;
     const stdDev = Math.sqrt(variance);
     const stabilityFactor = Math.max(0, Math.min(1, 1 - (stdDev * 10)));
@@ -454,7 +462,59 @@ function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     document.getElementById('ml-stability').textContent = (stabilityFactor * 100).toFixed(1) + '%';
     document.getElementById('ml-expected-cagr').textContent = (smartCAGR >= 0 ? '+' : '') + fPct.format(smartCAGR);
 
-    // 2. APR Breakdown (WODL vs 40% Target)
+    // 3. Scenario Logic
+    // Worst: 0% market growth
+    // Moderate: Scaled performance (cap high outliers for small datasets)
+    // Best: Current Smart CAGR momentum
+    const r_worst = 0;
+    const r_mod = (data.length < 14) ? Math.min(smartCAGR, 0.20) : smartCAGR; 
+    const r_best = smartCAGR;
+
+    // 4. Milestone Scenarios Rendering
+    const targets = [1000, 10000, 20000, 50000, 100000];
+    const tbody = document.getElementById('milestone-scenarios');
+    tbody.innerHTML = '';
+
+    const calculateDays = (target, r_ann, pmt, pv) => {
+        if (target <= pv) return 0;
+        const r_d = r_ann / 365; // Linear approx for simplicity in scenarios
+        const dailyGrowth = (pv * r_d) + pmt;
+        if (dailyGrowth <= 0) return Infinity;
+        // Solving FV for n: n = (target - pv) / avgGrowth (conservative linear)
+        // or using continuous: n = ln((FV*r+P)/(PV*r+P))/r
+        if (r_d === 0) return (target - pv) / pmt;
+        
+        const num = (target * r_d) + pmt;
+        const den = (pv * r_d) + pmt;
+        if (num <= 0 || den <= 0) return (target - pv) / dailyGrowth;
+        return Math.log(num / den) / r_d;
+    };
+
+    const formatDate = (days) => {
+        if (!isFinite(days) || days > 365 * 50) return '---';
+        const d = new Date();
+        d.setDate(d.getDate() + Math.ceil(days));
+        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    };
+
+    targets.forEach(target => {
+        if (target <= latest.totalValue) return;
+
+        const dWorst = calculateDays(target, r_worst, avgInflow, latest.totalValue);
+        const dMod = calculateDays(target, r_mod, avgInflow, latest.totalValue);
+        const dBest = calculateDays(target, r_best, avgInflow, latest.totalValue);
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${fCur.format(target)}</td>
+            <td class="col-worst">${formatDate(dWorst)}</td>
+            <td class="col-mod">${formatDate(dMod)}</td>
+            <td class="col-best">${formatDate(dBest)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // 5. APR Breakdown
     const annualYield = (avgInflow * 365);
     const currAPR = basis > 0 ? (annualYield / basis) : 0;
     const aprGap = 0.40 - currAPR;
@@ -463,42 +523,8 @@ function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     const gapEl = document.getElementById('intel-apr-gap');
     gapEl.textContent = (aprGap > 0 ? fPct.format(aprGap) : 'GOAL REACHED');
     gapEl.style.color = aprGap > 0 ? 'var(--negative)' : 'var(--positive)';
-
-    // 3. Milestones
-    const r_daily = meanLogReturn; 
-    const pmt = avgInflow;
-    const pv = latest.totalValue;
-    const targets = [1000, 10000, 20000, 50000, 100000];
-    const listEl = document.getElementById('milestone-list');
-    listEl.innerHTML = '';
-
-    targets.forEach(target => {
-        if (target <= pv) return;
-        let daysToTarget = Infinity;
-        const dailyGrowth = (pv * r_daily) + pmt;
-        if (dailyGrowth > 0) {
-            const num = (target * r_daily) + pmt;
-            const den = (pv * r_daily) + pmt;
-            if (num > 0 && den > 0) daysToTarget = Math.log(num / den) / r_daily;
-            else daysToTarget = (target - pv) / dailyGrowth;
-        }
-
-        const item = document.createElement('div');
-        item.className = 'milestone-item';
-        let dateStr = "TBD";
-        if (isFinite(daysToTarget) && daysToTarget > 0) {
-            const targetDate = new Date();
-            targetDate.setDate(targetDate.getDate() + Math.ceil(daysToTarget));
-            dateStr = targetDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            if (daysToTarget < 365) dateStr = `${Math.ceil(daysToTarget)} days`;
-        }
-        item.innerHTML = `
-            <span class="milestone-target">${fCur.format(target)}</span>
-            <span class="milestone-date">${dateStr}</span>
-        `;
-        listEl.appendChild(item);
-    });
 }
+
 
 function renderHoldingsChart(data) {
     const ctx = document.getElementById('holdingsChart').getContext('2d');

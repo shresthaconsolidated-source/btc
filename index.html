@@ -153,7 +153,7 @@
                         </div>
                         <div class="metric-row">
                             <div class="metric-item">
-                                <span class="label">Historical Stability</span>
+                                <span class="label">Stability Factor</span>
                                 <span class="value" id="ml-stability">--</span>
                             </div>
                             <div class="metric-item">
@@ -161,14 +161,37 @@
                                 <span class="value highlight-positive" id="ml-expected-cagr">--</span>
                             </div>
                         </div>
+                        <div class="confidence-wrap">
+                            <span class="label">Data Confidence</span>
+                            <div class="confidence-bar"><div id="ml-confidence-fill" style="width: 0%"></div></div>
+                        </div>
+                        <div class="metric-footer" style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 0.5rem;">
+                            <span class="label">Avg Daily Inflow:</span>
+                            <span class="value-sm" id="intel-avg-inflow">--</span>
+                        </div>
                     </div>
 
                     <div class="analysis-card glass">
-                        <h3>Detailed Milestones</h3>
-                        <div class="milestone-list" id="milestone-list">
-                            <div class="milestone-item placeholder">Processing history...</div>
+                        <h3>Milestone Projections</h3>
+                        <p class="text-muted" style="font-size: 0.7rem; margin-bottom: 1rem;">Estimated months to target based on 3 volatility scenarios.</p>
+                        
+                        <div class="scenario-table-container">
+                            <table class="scenario-table">
+                                <thead>
+                                    <tr>
+                                        <th>Target</th>
+                                        <th class="col-worst">Worst</th>
+                                        <th class="col-mod">Mod</th>
+                                        <th class="col-best">Best</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="milestone-scenarios">
+                                    <tr><td colspan="4" class="placeholder">Analyzing history...</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+
 
                     <div class="analysis-card glass intel-apr-card">
                         <h3>APR Target Breakdown</h3>
