@@ -25,7 +25,10 @@ function getVal(row, searchStr) {
 document.addEventListener("DOMContentLoaded", () => {
     initApp();
     setupModals();
+    setupTabs();
+    setInterval(fetchLivePrices, 10000); // 10s live update
 });
+
 
 async function initApp() {
     try {
@@ -144,6 +147,88 @@ function setupModals() {
         }
     });
 }
+
+function setupTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+            
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        });
+    });
+}
+
+let livePrices = { btc: 0, eth: 0, btcChange: 0, ethChange: 0 };
+
+async function fetchLivePrices() {
+    try {
+        const [btcRes, ethRes] = await Promise.all([
+            fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'),
+            fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT')
+        ]);
+        const btcData = await btcRes.json();
+        const ethData = await ethRes.json();
+        
+        livePrices = {
+            btc: parseFloat(btcData.lastPrice),
+            eth: parseFloat(ethData.lastPrice),
+            btcChange: parseFloat(btcData.priceChangePercent),
+            ethChange: parseFloat(ethData.priceChangePercent)
+        };
+        
+        updateLiveTicker();
+    } catch (err) {
+        console.error("Live Price Fetch failed:", err);
+    }
+}
+
+function updateLiveTicker() {
+    if (!livePrices.btc) return;
+    
+    const btcPriceEl = document.getElementById('live-btc-price');
+    const btcChangeEl = document.getElementById('live-btc-change');
+    const ethPriceEl = document.getElementById('live-eth-price');
+    const ethChangeEl = document.getElementById('live-eth-change');
+    
+    if (btcPriceEl) btcPriceEl.textContent = fCur.format(livePrices.btc);
+    if (btcChangeEl) {
+        btcChangeEl.textContent = `${livePrices.btcChange > 0 ? '+' : ''}${livePrices.btcChange.toFixed(2)}%`;
+        btcChangeEl.className = `ticker-change ${livePrices.btcChange >= 0 ? 'trend-up' : 'trend-down'}`;
+    }
+    
+    if (ethPriceEl) ethPriceEl.textContent = fCur.format(livePrices.eth);
+    if (ethChangeEl) {
+        ethChangeEl.textContent = `${livePrices.ethChange > 0 ? '+' : ''}${livePrices.ethChange.toFixed(2)}%`;
+        ethChangeEl.className = `ticker-change ${livePrices.ethChange >= 0 ? 'trend-up' : 'trend-down'}`;
+    }
+    
+    calculateImpact();
+}
+
+function calculateImpact() {
+    if (trueLedgerData.length === 0 || !livePrices.btc) return;
+    
+    const latest = trueLedgerData[trueLedgerData.length - 1];
+    
+    // Impact = (Current Price - Last Recorded Price) * Balance
+    const btcImpact = (livePrices.btc - latest.btcPrice) * latest.btcBal;
+    const ethImpact = (livePrices.eth - latest.ethPrice) * latest.ethBal;
+    const totalImpact = btcImpact + ethImpact;
+    
+    const impactEl = document.getElementById('portfolio-impact');
+    if (impactEl) {
+        impactEl.textContent = `${totalImpact >= 0 ? '+' : ''}${fCur.format(totalImpact)}`;
+        impactEl.style.color = totalImpact >= 0 ? 'var(--positive)' : 'var(--negative)';
+    }
+}
+
 
 function prefillForm() {
     if(trueLedgerData.length === 0) return;
@@ -299,7 +384,19 @@ function processAndRender(rawData) {
     if (currentDrawdownPct <= -0.10) { document.getElementById('kpi-drawdown').parentElement.style.borderColor = 'rgba(239, 68, 68, 0.4)'; }
     document.getElementById('kpi-cash-ratio').textContent = `${fPct.format(stableRatio)}`;
 
+    // --- APR TARGETING ---
+    // User wants 40% APR from APRs (Inflow WODL)
+    const annualYield = (grossInflowsForAvg / daysElapsed) * 365;
+    const aprBasis = finalAdjustedInvested > 0 ? (annualYield / finalAdjustedInvested) : 0;
+    const aprProgress = Math.min(100, (aprBasis / 0.40) * 100);
+    
+    const progressFill = document.getElementById('apr-progress-bar');
+    const progressText = document.getElementById('apr-target-text');
+    if (progressFill) progressFill.style.width = `${aprProgress}%`;
+    if (progressText) progressText.textContent = `${fPct.format(aprBasis)} / 40%`;
+
     // --- CHARTS & LEDGER ---
+
     renderPerformanceChart(timeSeriesDates, timeSeriesValues, timeSeriesCostBasis, timeSeriesBtcSimValues, timeSeries7DayMA);
 
     renderAllocationChart([

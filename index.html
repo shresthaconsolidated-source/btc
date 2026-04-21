@@ -40,6 +40,37 @@
             </div>
         </header>
 
+        <!-- Live Intelligence Bar -->
+        <section class="live-ticker glass">
+            <div class="ticker-item">
+                <span class="ticker-label">BTC</span>
+                <span class="ticker-price" id="live-btc-price">---</span>
+                <span class="ticker-change" id="live-btc-change">---</span>
+            </div>
+            <div class="ticker-divider"></div>
+            <div class="ticker-item">
+                <span class="ticker-label">ETH</span>
+                <span class="ticker-price" id="live-eth-price">---</span>
+                <span class="ticker-change" id="live-eth-change">---</span>
+            </div>
+            <div class="ticker-divider"></div>
+            <div class="ticker-item highlight">
+                <span class="ticker-label">Price Impact</span>
+                <span class="ticker-price" id="portfolio-impact">---</span>
+            </div>
+
+            <div class="ticker-divider"></div>
+            <div class="ticker-item">
+                <span class="ticker-label">APR Target</span>
+                <div class="apr-target-pill">
+                    <div class="apr-progress" id="apr-progress-bar" style="width: 0%"></div>
+                    <span class="apr-text" id="apr-target-text">0% / 40%</span>
+                </div>
+            </div>
+
+        </section>
+
+
         <!-- KPI Scorecards Grid -->
         <section class="kpi-grid expanded-grid">
             <div class="kpi-card glass">
@@ -79,13 +110,23 @@
             </div>
         </section>
 
+        <!-- Mobile Tab Navigation -->
+        <nav class="mobile-tabs hide-desktop">
+            <button class="tab-btn active" data-tab="performance">Chart</button>
+            <button class="tab-btn" data-tab="allocation">Alloc</button>
+            <button class="tab-btn" data-tab="ledger">Ledger</button>
+        </nav>
+
         <!-- Main Analysis Grid & Ledger -->
         <section class="dashboard-body">
-            <div class="dashboard-left">
+            <div class="dashboard-left tab-content active" id="tab-performance">
                 <div class="chart-container glass performance-chart-wrapper">
                     <div class="section-header"><h2>Analytics (Benchmark & Trends)</h2></div>
                     <div class="chart-canvas-container"><canvas id="performanceChart"></canvas></div>
                 </div>
+            </div>
+
+            <div class="dashboard-left tab-content" id="tab-allocation">
                 <div class="chart-container glass allocation-chart-wrapper">
                     <div class="section-header"><h2>Current Allocation</h2></div>
                     <div class="split-allocation">
@@ -95,7 +136,7 @@
                 </div>
             </div>
 
-            <div class="dashboard-right">
+            <div class="dashboard-right tab-content" id="tab-ledger">
                 <section class="ledger-container glass">
                     <div class="section-header">
                         <h2>Asset Ledger (Real Entries)</h2>
