@@ -2,7 +2,9 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4keJuJi6W2iD_
 
 let perfChartInstance = null;
 let priceChartInstance = null;
+let holdingsChartInstance = null;
 let allocChartInstance = null;
+
 
 let trueLedgerData = [];
 let WebhookUrl = localStorage.getItem('quantum_webhook') || 'https://script.google.com/macros/s/AKfycbxs3lwwOiuv4usHKg7cEwqnTXjumgkVsY7eFKpgcv653OboaV8ABLUn3k-4qpCas1J6YQ/exec';
@@ -27,9 +29,10 @@ function getVal(row, searchStr) {
 document.addEventListener("DOMContentLoaded", () => {
     initApp();
     setupModals();
-    setupTabs();
-    setInterval(fetchLivePrices, 10000); // 10s live update
+    setupViews();
+    // fetchLivePrices setInterval removed as requested to only use sheet data
 });
+
 
 
 async function initApp() {
@@ -150,22 +153,36 @@ function setupModals() {
     });
 }
 
-function setupTabs() {
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
+function setupViews() {
+    const viewBtns = document.querySelectorAll('.view-btn');
+    const mobileTabBtns = document.querySelectorAll('.tab-btn'); // For mobile compat
+    const views = document.querySelectorAll('main');
     
-    tabBtns.forEach(btn => {
+    const switchView = (viewId) => {
+        views.forEach(v => v.classList.remove('active-view'));
+        viewBtns.forEach(b => b.classList.remove('active'));
+        
+        const targetView = document.getElementById(`view-${viewId}`);
+        if (targetView) targetView.classList.add('active-view');
+        
+        const targetBtn = document.querySelector(`.view-btn[data-view="${viewId}"]`);
+        if (targetBtn) targetBtn.classList.add('active');
+    };
+
+    viewBtns.forEach(btn => {
+        btn.addEventListener('click', () => switchView(btn.getAttribute('data-view')));
+    });
+
+    // Mobile fallback if user clicks bottom tabs
+    mobileTabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            const tabId = btn.getAttribute('data-tab');
-            
-            tabBtns.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-            
-            btn.classList.add('active');
-            document.getElementById(`tab-${tabId}`).classList.add('active');
+            const tab = btn.getAttribute('data-tab');
+            if (tab === 'analysis') switchView('intelligence');
+            else switchView('terminal');
         });
     });
 }
+
 
 let livePrices = { btc: 0, eth: 0, btcChange: 0, ethChange: 0 };
 
@@ -413,72 +430,61 @@ function processAndRender(rawData) {
     // --- SMART ANALYSIS & PROJECTIONS ---
     calculateSmartAnalysis(trueLedgerData, latest, finalAdjustedInvested, daysElapsed, avgDailyInflow);
     renderPriceHistoryChart(trueLedgerData);
+    renderHoldingsChart(trueLedgerData);
 }
 
 function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     if (data.length < 2) return;
 
     // 1. Smart CAGR via Mean Logarithmic Return
-    // We analyze the daily log-returns to find the geometric growth pace
     let logReturns = [];
     for (let i = 1; i < data.length; i++) {
         const prev = data[i-1];
         const curr = data[i];
-        // Adjusted for inflows on that day
         const return_val = curr.totalValue / (prev.totalValue + curr.inflow);
-        if (return_val > 0) {
-            logReturns.push(Math.log(return_val));
-        }
+        if (return_val > 0) logReturns.push(Math.log(return_val));
     }
 
     const meanLogReturn = logReturns.reduce((a, b) => a + b, 0) / logReturns.length;
     const smartCAGR = Math.exp(meanLogReturn * 365) - 1;
-    
-    // Stability Factor: 1 - standard deviation of log returns (normalized)
     const variance = logReturns.reduce((a, b) => a + Math.pow(b - meanLogReturn, 2), 0) / logReturns.length;
     const stdDev = Math.sqrt(variance);
-    const stabilityFactor = Math.max(0, Math.min(1, 1 - (stdDev * 10))); // Arbitrary scaling for "feel"
+    const stabilityFactor = Math.max(0, Math.min(1, 1 - (stdDev * 10)));
 
     document.getElementById('ml-stability').textContent = (stabilityFactor * 100).toFixed(1) + '%';
     document.getElementById('ml-expected-cagr').textContent = (smartCAGR >= 0 ? '+' : '') + fPct.format(smartCAGR);
 
-    // 2. Milestones via Future Value formula
-    // FV = PV(1+r)^n + PMT((1+r)^n - 1)/r
-    // We solve for n (days)
-    const r_daily = meanLogReturn; // Daily log-return is basically the continuous rate
+    // 2. APR Breakdown (WODL vs 40% Target)
+    const annualYield = (avgInflow * 365);
+    const currAPR = basis > 0 ? (annualYield / basis) : 0;
+    const aprGap = 0.40 - currAPR;
+
+    document.getElementById('intel-curr-apr').textContent = fPct.format(currAPR);
+    const gapEl = document.getElementById('intel-apr-gap');
+    gapEl.textContent = (aprGap > 0 ? fPct.format(aprGap) : 'GOAL REACHED');
+    gapEl.style.color = aprGap > 0 ? 'var(--negative)' : 'var(--positive)';
+
+    // 3. Milestones
+    const r_daily = meanLogReturn; 
     const pmt = avgInflow;
     const pv = latest.totalValue;
-    
     const targets = [1000, 10000, 20000, 50000, 100000];
     const listEl = document.getElementById('milestone-list');
     listEl.innerHTML = '';
 
     targets.forEach(target => {
-        if (target <= pv) return; // Already reached
-
+        if (target <= pv) return;
         let daysToTarget = Infinity;
-        
-        // If growth + inflows is positive, we will reach it
         const dailyGrowth = (pv * r_daily) + pmt;
-        
         if (dailyGrowth > 0) {
-            // Using the rearrangement of FV formula for n
-            // n = ln( (FV*r + PMT) / (PV*r + PMT) ) / ln(1+r)
-            // Note: with log returns, ln(1+r) is just r
-            const numerator = (target * r_daily) + pmt;
-            const denominator = (pv * r_daily) + pmt;
-            
-            if (numerator > 0 && denominator > 0) {
-                daysToTarget = Math.log(numerator / denominator) / r_daily;
-            } else {
-                // If r is negative but PMT is positive enough to cover it
-                daysToTarget = (target - pv) / dailyGrowth;
-            }
+            const num = (target * r_daily) + pmt;
+            const den = (pv * r_daily) + pmt;
+            if (num > 0 && den > 0) daysToTarget = Math.log(num / den) / r_daily;
+            else daysToTarget = (target - pv) / dailyGrowth;
         }
 
         const item = document.createElement('div');
         item.className = 'milestone-item';
-        
         let dateStr = "TBD";
         if (isFinite(daysToTarget) && daysToTarget > 0) {
             const targetDate = new Date();
@@ -486,7 +492,6 @@ function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
             dateStr = targetDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
             if (daysToTarget < 365) dateStr = `${Math.ceil(daysToTarget)} days`;
         }
-
         item.innerHTML = `
             <span class="milestone-target">${fCur.format(target)}</span>
             <span class="milestone-date">${dateStr}</span>
@@ -495,7 +500,38 @@ function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     });
 }
 
+function renderHoldingsChart(data) {
+    const ctx = document.getElementById('holdingsChart').getContext('2d');
+    if (holdingsChartInstance) holdingsChartInstance.destroy();
+
+    const labels = data.map(d => d.dateStr);
+    const btcHoldings = data.map(d => d.btcBal);
+    const ethHoldings = data.map(d => d.ethBal);
+
+    holdingsChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'BTC Stack', data: btcHoldings, borderColor: '#f7931a', backgroundColor: 'rgba(247, 147, 26, 0.1)', borderWidth: 2, fill: true, tension: 0.1, yAxisID: 'y' },
+                { label: 'ETH Stack', data: ethHoldings, borderColor: '#627eea', backgroundColor: 'rgba(98, 126, 234, 0.1)', borderWidth: 2, fill: true, tension: 0.1, yAxisID: 'y1' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+            scales: {
+                x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MMM d' } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'BTC Qty', font: { size: 10 } } },
+                y1: { type: 'linear', display: true, position: 'right', grid: { display: false }, title: { display: true, text: 'ETH Qty', font: { size: 10 } } }
+            }
+        }
+    });
+}
+
 function renderPriceHistoryChart(data) {
+
     const ctx = document.getElementById('priceHistoryChart').getContext('2d');
     if (priceChartInstance) priceChartInstance.destroy();
 

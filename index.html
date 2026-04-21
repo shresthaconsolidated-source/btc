@@ -25,7 +25,14 @@
                 <div class="logo-orb"></div>
                 <h1>QUANTUM <span class="badge">TERMINAL V2</span></h1>
             </div>
+            
+            <nav class="view-nav">
+                <button class="view-btn active" data-view="terminal">Terminal</button>
+                <button class="view-btn" data-view="intelligence">Intelligence</button>
+            </nav>
+
             <div class="header-actions">
+
                 <button class="btn-primary" id="btn-new-entry">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     New Entry
@@ -40,156 +47,161 @@
             </div>
         </header>
 
-        <!-- Live Intelligence Bar -->
-        <section class="live-ticker glass">
-            <div class="ticker-item">
-                <span class="ticker-label">BTC</span>
-                <span class="ticker-price" id="live-btc-price">---</span>
-                <span class="ticker-change" id="live-btc-change">---</span>
-            </div>
-            <div class="ticker-divider"></div>
-            <div class="ticker-item">
-                <span class="ticker-label">ETH</span>
-                <span class="ticker-price" id="live-eth-price">---</span>
-                <span class="ticker-change" id="live-eth-change">---</span>
-            </div>
-            <div class="ticker-divider"></div>
-            <div class="ticker-item highlight">
-                <span class="ticker-label">Price Impact</span>
-                <span class="ticker-price" id="portfolio-impact">---</span>
-            </div>
-
-            <div class="ticker-divider"></div>
-            <div class="ticker-item">
-                <span class="ticker-label">APR Target</span>
-                <div class="apr-target-pill">
-                    <div class="apr-progress" id="apr-progress-bar" style="width: 0%"></div>
-                    <span class="apr-text" id="apr-target-text">0% / 40%</span>
+        <!-- TERMINAL VIEW (Main Dashboard) -->
+        <main id="view-terminal" class="active-view">
+            <!-- Live Intelligence Bar -->
+            <section class="live-ticker glass">
+                <div class="ticker-item">
+                    <span class="ticker-label">BTC</span>
+                    <span class="ticker-price" id="live-btc-price">---</span>
+                    <span class="ticker-change" id="live-btc-change">---</span>
                 </div>
-            </div>
-
-        </section>
-
-
-        <!-- KPI Scorecards Grid -->
-        <section class="kpi-grid expanded-grid">
-            <div class="kpi-card glass">
-                <div class="kpi-header"><span class="kpi-title">Current Value</span></div>
-                <div class="kpi-value highlight-active" id="kpi-current-value">---</div>
-                <div class="kpi-footer"><span class="kpi-trend" id="kpi-daily-trend">---</span></div>
-            </div>
-
-            <div class="kpi-card glass">
-                <div class="kpi-header"><span class="kpi-title">Adjusted Basis</span></div>
-                <div class="kpi-value highlight-muted" id="kpi-invested-value">---</div>
-                <div class="kpi-footer"><span class="text-muted" id="kpi-avg-inflows">Avg Inflow: ---/day</span></div>
-            </div>
-
-            <div class="kpi-card glass">
-                <div class="kpi-header"><span class="kpi-title">Overall Return</span></div>
-                <div class="kpi-value" id="kpi-total-gain">---</div>
-                <div class="kpi-footer"><span class="kpi-trend badge-solid" id="kpi-total-percent">---</span></div>
-            </div>
-
-            <div class="kpi-card glass">
-                <div class="kpi-header"><span class="kpi-title">Max Drawdown</span></div>
-                <div class="kpi-value" style="color: var(--negative)" id="kpi-drawdown">---</div>
-                <div class="kpi-footer"><span class="text-muted" id="kpi-ath-value">ATH: ---</span></div>
-            </div>
-
-            <div class="kpi-card glass">
-                <div class="kpi-header"><span class="kpi-title">Dry Powder</span></div>
-                <div class="kpi-value text-gradient" id="kpi-cash-ratio">---</div>
-                <div class="kpi-footer"><span class="text-muted">Stablecoin % of Risk</span></div>
-            </div>
-
-            <div class="kpi-card glass">
-                <div class="kpi-header"><span class="kpi-title">Long-Term CAGR</span></div>
-                <div class="kpi-value text-gradient" id="kpi-cagr">---</div>
-                <div class="kpi-footer"><span class="text-muted" id="kpi-days-elapsed">Analysing timeline...</span></div>
-            </div>
-        </section>
-
-        <!-- Mobile Tab Navigation -->
-        <nav class="mobile-tabs hide-desktop">
-            <button class="tab-btn active" data-tab="performance">Chart</button>
-            <button class="tab-btn" data-tab="analysis">Analysis</button>
-            <button class="tab-btn" data-tab="allocation">Alloc</button>
-            <button class="tab-btn" data-tab="ledger">Ledger</button>
-        </nav>
-
-
-        <!-- Main Analysis Grid & Ledger -->
-        <section class="dashboard-body">
-            <div class="dashboard-left tab-content active" id="tab-performance">
-                <div class="chart-container glass performance-chart-wrapper">
-                    <div class="section-header"><h2>Analytics (Benchmark & Trends)</h2></div>
-                    <div class="chart-canvas-container"><canvas id="performanceChart"></canvas></div>
+                <div class="ticker-divider"></div>
+                <div class="ticker-item">
+                    <span class="ticker-label">ETH</span>
+                    <span class="ticker-price" id="live-eth-price">---</span>
+                    <span class="ticker-change" id="live-eth-change">---</span>
                 </div>
-            </div>
-
-            <div class="dashboard-left tab-content" id="tab-allocation">
-                <div class="chart-container glass allocation-chart-wrapper">
-                    <div class="section-header"><h2>Current Allocation</h2></div>
-                    <div class="split-allocation">
-                        <div class="chart-canvas-container donut-wrap"><canvas id="allocationChart"></canvas></div>
-                        <div class="allocation-legend" id="allocation-legend"></div>
+                <div class="ticker-divider"></div>
+                <div class="ticker-item highlight">
+                    <span class="ticker-label">Price Impact</span>
+                    <span class="ticker-price" id="portfolio-impact">---</span>
+                </div>
+                <div class="ticker-divider"></div>
+                <div class="ticker-item">
+                    <span class="ticker-label">APR Target</span>
+                    <div class="apr-target-pill">
+                        <div class="apr-progress" id="apr-progress-bar" style="width: 0%"></div>
+                        <span class="apr-text" id="apr-target-text">0% / 40%</span>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="dashboard-right tab-content" id="tab-ledger">
-                <section class="ledger-container glass">
-                    <div class="section-header">
-                        <h2>Asset Ledger (Real Entries)</h2>
-                        <div class="search-wrap"><input type="text" id="table-search" placeholder="Search..."></div>
-                    </div>
-                    <div class="table-responsive">
-                        <table id="ledger-table">
-                            <thead><tr><th>Date</th><th>Total Value</th><th>% Gain</th><th>Inflows</th></tr></thead>
-                            <tbody id="ledger-body"></tbody>
-                        </table>
-                    </div>
-                </section>
-            </div>
+            <!-- KPI Scorecards Grid -->
+            <section class="kpi-grid expanded-grid">
+                <div class="kpi-card glass">
+                    <div class="kpi-header"><span class="kpi-title">Current Value</span></div>
+                    <div class="kpi-value highlight-active" id="kpi-current-value">---</div>
+                    <div class="kpi-footer"><span class="kpi-trend" id="kpi-daily-trend">---</span></div>
+                </div>
+                <div class="kpi-card glass">
+                    <div class="kpi-header"><span class="kpi-title">Adjusted Basis</span></div>
+                    <div class="kpi-value highlight-muted" id="kpi-invested-value">---</div>
+                    <div class="kpi-footer"><span class="text-muted" id="kpi-avg-inflows">Avg Inflow: ---/day</span></div>
+                </div>
+                <div class="kpi-card glass">
+                    <div class="kpi-header"><span class="kpi-title">Overall Return</span></div>
+                    <div class="kpi-value" id="kpi-total-gain">---</div>
+                    <div class="kpi-footer"><span class="kpi-trend badge-solid" id="kpi-total-percent">---</span></div>
+                </div>
+                <div class="kpi-card glass">
+                    <div class="kpi-header"><span class="kpi-title">Max Drawdown</span></div>
+                    <div class="kpi-value" style="color: var(--negative)" id="kpi-drawdown">---</div>
+                    <div class="kpi-footer"><span class="text-muted" id="kpi-ath-value">ATH: ---</span></div>
+                </div>
+                <div class="kpi-card glass">
+                    <div class="kpi-header"><span class="kpi-title">Dry Powder</span></div>
+                    <div class="kpi-value text-gradient" id="kpi-cash-ratio">---</div>
+                    <div class="kpi-footer"><span class="text-muted">Stablecoin % of Risk</span></div>
+                </div>
+                <div class="kpi-card glass">
+                    <div class="kpi-header"><span class="kpi-title">Long-Term CAGR</span></div>
+                    <div class="kpi-value text-gradient" id="kpi-cagr">---</div>
+                    <div class="kpi-footer"><span class="text-muted" id="kpi-days-elapsed">Analysing timeline...</span></div>
+                </div>
+            </section>
 
-            <div class="dashboard-left tab-content" id="tab-analysis">
-                <div class="analysis-grid">
-                    <div class="chart-container glass">
-                        <div class="section-header"><h2>BTC & ETH Price History</h2></div>
+            <section class="dashboard-body">
+                <div class="dashboard-left">
+                    <div class="chart-container glass performance-chart-wrapper">
+                        <div class="section-header"><h2>Analytics (Benchmark & Trends)</h2></div>
+                        <div class="chart-canvas-container"><canvas id="performanceChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="dashboard-right">
+                    <div class="chart-container glass allocation-chart-wrapper">
+                        <div class="section-header"><h2>Current Allocation</h2></div>
+                        <div class="split-allocation">
+                            <div class="chart-canvas-container donut-wrap"><canvas id="allocationChart"></canvas></div>
+                            <div class="allocation-legend" id="allocation-legend"></div>
+                        </div>
+                    </div>
+                    <section class="ledger-container glass" style="margin-top: 1rem; flex: 1.5;">
+                        <div class="section-header">
+                            <h2>Asset Ledger</h2>
+                            <div class="search-wrap"><input type="text" id="table-search" placeholder="Search..."></div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="ledger-table">
+                                <thead><tr><th>Date</th><th>Value</th><th>%</th><th>Inflow</th></tr></thead>
+                                <tbody id="ledger-body"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </section>
+        </main>
+
+        <!-- INTELLIGENCE VIEW (Analysis Deep-Dive) -->
+        <main id="view-intelligence">
+            <div class="intelligence-layout">
+                <div class="intel-sidebar">
+                    <div class="analysis-card glass">
+                        <div class="header-with-badge">
+                            <h3>Smart CAGR</h3>
+                            <span class="badge-ml">ML MODEL</span>
+                        </div>
+                        <div class="metric-row">
+                            <div class="metric-item">
+                                <span class="label">Historical Stability</span>
+                                <span class="value" id="ml-stability">--</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="label">Forecast CAGR</span>
+                                <span class="value highlight-positive" id="ml-expected-cagr">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-card glass">
+                        <h3>Detailed Milestones</h3>
+                        <div class="milestone-list" id="milestone-list">
+                            <div class="milestone-item placeholder">Processing history...</div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-card glass intel-apr-card">
+                        <h3>APR Target Breakdown</h3>
+                        <div class="apr-stats-grid">
+                            <div class="apr-stat-item">
+                                <span class="label">Current APR</span>
+                                <span class="value" id="intel-curr-apr">--</span>
+                            </div>
+                            <div class="apr-stat-item">
+                                <span class="label">Target</span>
+                                <span class="value" style="color: var(--positive)">40.0%</span>
+                            </div>
+                            <div class="apr-stat-item">
+                                <span class="label">Gap to Goal</span>
+                                <span class="value" id="intel-apr-gap">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="intel-main">
+                    <div class="chart-container glass intel-chart-row">
+                        <div class="section-header"><h2>BTC & ETH Price History (Sheet Prices)</h2></div>
                         <div class="chart-canvas-container"><canvas id="priceHistoryChart"></canvas></div>
                     </div>
-
-                    <div class="analysis-sidebar">
-                        <div class="analysis-card glass">
-                            <div class="header-with-badge">
-                                <h3>Smart CAGR Analysis</h3>
-                                <span class="badge-ml">ML MODELLING</span>
-                            </div>
-                            <p class="text-secondary" style="font-size: 0.8rem; margin: 0.5rem 0 1rem;">Log-return variance analysis for long-term growth projection.</p>
-                            <div class="metric-row">
-                                <div class="metric-item">
-                                    <span class="label">Stability Factor</span>
-                                    <span class="value" id="ml-stability">--</span>
-                                </div>
-                                <div class="metric-item">
-                                    <span class="label">Expected CAGR</span>
-                                    <span class="value highlight-positive" id="ml-expected-cagr">--</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="analysis-card glass">
-                            <h3>Milestone Projections</h3>
-                            <div class="milestone-list" id="milestone-list">
-                                <!-- Generated JS content -->
-                                <div class="milestone-item placeholder">Calculating financial trajectory...</div>
-                            </div>
-                        </div>
+                    <div class="chart-container glass intel-chart-row">
+                        <div class="section-header"><h2>Holdings History (Asset Quantities)</h2></div>
+                        <div class="chart-canvas-container"><canvas id="holdingsChart"></canvas></div>
                     </div>
                 </div>
             </div>
-        </section>
+        </main>
+
 
         </section>
     </div>
