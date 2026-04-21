@@ -113,9 +113,11 @@
         <!-- Mobile Tab Navigation -->
         <nav class="mobile-tabs hide-desktop">
             <button class="tab-btn active" data-tab="performance">Chart</button>
+            <button class="tab-btn" data-tab="analysis">Analysis</button>
             <button class="tab-btn" data-tab="allocation">Alloc</button>
             <button class="tab-btn" data-tab="ledger">Ledger</button>
         </nav>
+
 
         <!-- Main Analysis Grid & Ledger -->
         <section class="dashboard-body">
@@ -150,6 +152,45 @@
                     </div>
                 </section>
             </div>
+
+            <div class="dashboard-left tab-content" id="tab-analysis">
+                <div class="analysis-grid">
+                    <div class="chart-container glass">
+                        <div class="section-header"><h2>BTC & ETH Price History</h2></div>
+                        <div class="chart-canvas-container"><canvas id="priceHistoryChart"></canvas></div>
+                    </div>
+
+                    <div class="analysis-sidebar">
+                        <div class="analysis-card glass">
+                            <div class="header-with-badge">
+                                <h3>Smart CAGR Analysis</h3>
+                                <span class="badge-ml">ML MODELLING</span>
+                            </div>
+                            <p class="text-secondary" style="font-size: 0.8rem; margin: 0.5rem 0 1rem;">Log-return variance analysis for long-term growth projection.</p>
+                            <div class="metric-row">
+                                <div class="metric-item">
+                                    <span class="label">Stability Factor</span>
+                                    <span class="value" id="ml-stability">--</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="label">Expected CAGR</span>
+                                    <span class="value highlight-positive" id="ml-expected-cagr">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="analysis-card glass">
+                            <h3>Milestone Projections</h3>
+                            <div class="milestone-list" id="milestone-list">
+                                <!-- Generated JS content -->
+                                <div class="milestone-item placeholder">Calculating financial trajectory...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         </section>
     </div>
 

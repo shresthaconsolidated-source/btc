@@ -1,7 +1,9 @@
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4keJuJi6W2iD_uSE1tRXRWPyJXQ5oe7KOHys1pI5sHBMjjk2HRzCIK9xsK1kgR7fIZqDejXRotfjd/pub?output=csv";
 
 let perfChartInstance = null;
+let priceChartInstance = null;
 let allocChartInstance = null;
+
 let trueLedgerData = [];
 let WebhookUrl = localStorage.getItem('quantum_webhook') || 'https://script.google.com/macros/s/AKfycbxs3lwwOiuv4usHKg7cEwqnTXjumgkVsY7eFKpgcv653OboaV8ABLUn3k-4qpCas1J6YQ/exec';
 
@@ -407,7 +409,122 @@ function processAndRender(rawData) {
     ]);
 
     renderLedgerTable(trueLedgerData); 
+    
+    // --- SMART ANALYSIS & PROJECTIONS ---
+    calculateSmartAnalysis(trueLedgerData, latest, finalAdjustedInvested, daysElapsed, avgDailyInflow);
+    renderPriceHistoryChart(trueLedgerData);
 }
+
+function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
+    if (data.length < 2) return;
+
+    // 1. Smart CAGR via Mean Logarithmic Return
+    // We analyze the daily log-returns to find the geometric growth pace
+    let logReturns = [];
+    for (let i = 1; i < data.length; i++) {
+        const prev = data[i-1];
+        const curr = data[i];
+        // Adjusted for inflows on that day
+        const return_val = curr.totalValue / (prev.totalValue + curr.inflow);
+        if (return_val > 0) {
+            logReturns.push(Math.log(return_val));
+        }
+    }
+
+    const meanLogReturn = logReturns.reduce((a, b) => a + b, 0) / logReturns.length;
+    const smartCAGR = Math.exp(meanLogReturn * 365) - 1;
+    
+    // Stability Factor: 1 - standard deviation of log returns (normalized)
+    const variance = logReturns.reduce((a, b) => a + Math.pow(b - meanLogReturn, 2), 0) / logReturns.length;
+    const stdDev = Math.sqrt(variance);
+    const stabilityFactor = Math.max(0, Math.min(1, 1 - (stdDev * 10))); // Arbitrary scaling for "feel"
+
+    document.getElementById('ml-stability').textContent = (stabilityFactor * 100).toFixed(1) + '%';
+    document.getElementById('ml-expected-cagr').textContent = (smartCAGR >= 0 ? '+' : '') + fPct.format(smartCAGR);
+
+    // 2. Milestones via Future Value formula
+    // FV = PV(1+r)^n + PMT((1+r)^n - 1)/r
+    // We solve for n (days)
+    const r_daily = meanLogReturn; // Daily log-return is basically the continuous rate
+    const pmt = avgInflow;
+    const pv = latest.totalValue;
+    
+    const targets = [1000, 10000, 20000, 50000, 100000];
+    const listEl = document.getElementById('milestone-list');
+    listEl.innerHTML = '';
+
+    targets.forEach(target => {
+        if (target <= pv) return; // Already reached
+
+        let daysToTarget = Infinity;
+        
+        // If growth + inflows is positive, we will reach it
+        const dailyGrowth = (pv * r_daily) + pmt;
+        
+        if (dailyGrowth > 0) {
+            // Using the rearrangement of FV formula for n
+            // n = ln( (FV*r + PMT) / (PV*r + PMT) ) / ln(1+r)
+            // Note: with log returns, ln(1+r) is just r
+            const numerator = (target * r_daily) + pmt;
+            const denominator = (pv * r_daily) + pmt;
+            
+            if (numerator > 0 && denominator > 0) {
+                daysToTarget = Math.log(numerator / denominator) / r_daily;
+            } else {
+                // If r is negative but PMT is positive enough to cover it
+                daysToTarget = (target - pv) / dailyGrowth;
+            }
+        }
+
+        const item = document.createElement('div');
+        item.className = 'milestone-item';
+        
+        let dateStr = "TBD";
+        if (isFinite(daysToTarget) && daysToTarget > 0) {
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + Math.ceil(daysToTarget));
+            dateStr = targetDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            if (daysToTarget < 365) dateStr = `${Math.ceil(daysToTarget)} days`;
+        }
+
+        item.innerHTML = `
+            <span class="milestone-target">${fCur.format(target)}</span>
+            <span class="milestone-date">${dateStr}</span>
+        `;
+        listEl.appendChild(item);
+    });
+}
+
+function renderPriceHistoryChart(data) {
+    const ctx = document.getElementById('priceHistoryChart').getContext('2d');
+    if (priceChartInstance) priceChartInstance.destroy();
+
+    const labels = data.map(d => d.dateStr);
+    const btcHistory = data.map(d => d.btcPrice);
+    const ethHistory = data.map(d => d.ethPrice);
+
+    priceChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'BTC Price', data: btcHistory, borderColor: '#f7931a', borderWidth: 2, pointRadius: 0, fill: false, yAxisID: 'y' },
+                { label: 'ETH Price', data: ethHistory, borderColor: '#627eea', borderWidth: 2, pointRadius: 0, fill: false, yAxisID: 'y1' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MMM d' } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                y: { type: 'linear', display: true, position: 'left', grid: { color: 'rgba(255,255,255,0.03)' }, title: { display: true, text: 'BTC ($)', font: { size: 10 } } },
+                y1: { type: 'linear', display: true, position: 'right', grid: { display: false }, title: { display: true, text: 'ETH ($)', font: { size: 10 } } }
+            }
+        }
+    });
+}
+
 
 function renderPerformanceChart(labels, values, costBasis, btcSim, ma7Data) {
     const ctx = document.getElementById('performanceChart').getContext('2d');
