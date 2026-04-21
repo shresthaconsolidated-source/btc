@@ -1,14 +1,21 @@
 {
-  "name": "Crypto DI Tracker",
-  "short_name": "DI Tracker",
-  "description": "Dual Investment Portfolio Tracker — BTC & ETH",
-  "start_url": "/",
+  "name": "Quantum Portfolio Terminal",
+  "short_name": "Quantum",
+  "description": "Advanced Daily Crypto Portfolio Tracker",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#080810",
-  "theme_color": "#a78bfa",
-  "orientation": "any",
+  "background_color": "#060913",
+  "theme_color": "#060913",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
