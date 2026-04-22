@@ -290,6 +290,80 @@ function compute7DayMA(values) {
     return ma;
 }
 
+// AI Engine: Deduce Trades, Capital Gains, and Yield from daily snapshots
+function runReconciliationEngine(data) {
+    let metrics = { totalBtcYield: 0, totalEthYield: 0, totalUsdtYield: 0, btcCostBasis: 0, ethCostBasis: 0, realizedCapitalGains: 0 };
+    if (data.length === 0) return metrics;
+
+    metrics.btcCostBasis = data[0].btcBal * data[0].btcPrice; 
+    metrics.ethCostBasis = data[0].ethBal * data[0].ethPrice;
+
+    for (let i = 1; i < data.length; i++) {
+        const prev = data[i-1], curr = data[i];
+        let dBtc = curr.btcBal - prev.btcBal;
+        let dEth = curr.ethBal - prev.ethBal;
+        
+        let dUsdtRaw = (curr.usdtBal + curr.usdcBal) - (prev.usdtBal + prev.usdcBal);
+        let cleanDUsdt = dUsdtRaw - curr.inflow; 
+        let usdtSpentOnTrades = 0;
+
+        // BTC Reconciliation
+        if (dBtc > 0.00000001) {
+            if (cleanDUsdt < -1) { // Up-Down (Buy)
+                let expectedBtcBought = Math.abs(cleanDUsdt) / curr.btcPrice;
+                if (dBtc > expectedBtcBought) {
+                    metrics.totalBtcYield += (dBtc - expectedBtcBought);
+                    metrics.btcCostBasis += Math.abs(cleanDUsdt);
+                    usdtSpentOnTrades += Math.abs(cleanDUsdt);
+                } else {
+                    metrics.btcCostBasis += (dBtc * curr.btcPrice);
+                    usdtSpentOnTrades += (dBtc * curr.btcPrice);
+                }
+            } else { // Up-Up (Pure Yield)
+                metrics.totalBtcYield += dBtc;
+            }
+        } else if (dBtc < -0.00000001) { // Down-Up (Sell)
+            let btcSold = Math.abs(dBtc);
+            let avgPrice = prev.btcBal > 0 ? (metrics.btcCostBasis / prev.btcBal) : prev.btcPrice;
+            let costOfSold = btcSold * avgPrice;
+            metrics.btcCostBasis -= costOfSold;
+            let proceeds = btcSold * curr.btcPrice; 
+            metrics.realizedCapitalGains += (proceeds - costOfSold);
+        }
+
+        // ETH Reconciliation
+        let remainingUsdtDrop = cleanDUsdt + usdtSpentOnTrades; // If some was used for BTC
+        if (dEth > 0.00000001) {
+            if (remainingUsdtDrop < -1) { 
+                let expectedEthBought = Math.abs(remainingUsdtDrop) / curr.ethPrice;
+                if (dEth > expectedEthBought) {
+                    metrics.totalEthYield += (dEth - expectedEthBought);
+                    metrics.ethCostBasis += Math.abs(remainingUsdtDrop);
+                } else {
+                    metrics.ethCostBasis += (dEth * curr.ethPrice);
+                }
+            } else { 
+                metrics.totalEthYield += dEth;
+            }
+        } else if (dEth < -0.00000001) {
+            let ethSold = Math.abs(dEth);
+            let avgPrice = prev.ethBal > 0 ? (metrics.ethCostBasis / prev.ethBal) : prev.ethPrice;
+            let costOfSold = ethSold * avgPrice;
+            metrics.ethCostBasis -= costOfSold;
+            metrics.realizedCapitalGains += ((ethSold * curr.ethPrice) - costOfSold);
+        }
+
+        // USDT Pure Yield Detection (If USDT went up significantly without selling assets)
+        if (cleanDUsdt > 1 && dBtc >= -0.00000001 && dEth >= -0.00000001) {
+            metrics.totalUsdtYield += cleanDUsdt;
+        }
+        
+        if (metrics.btcCostBasis < 0) metrics.btcCostBasis = 0;
+        if (metrics.ethCostBasis < 0) metrics.ethCostBasis = 0;
+    }
+    return metrics;
+}
+
 function processAndRender(rawData) {
     if (!rawData || rawData.length === 0) return;
 
@@ -428,6 +502,30 @@ function processAndRender(rawData) {
     renderLedgerTable(trueLedgerData); 
     
     // --- SMART ANALYSIS & PROJECTIONS ---
+    const aiMetrics = runReconciliationEngine(trueLedgerData);
+    
+    // Update AI Reconciliation DOM
+    const btcBasisAvg = latest.btcBal > 0 ? (aiMetrics.btcCostBasis / latest.btcBal) : 0;
+    const ethBasisAvg = latest.ethBal > 0 ? (aiMetrics.ethCostBasis / latest.ethBal) : 0;
+    
+    // Calculate Pure APR Value (Total Value of yield in current prices)
+    const pureAprValue = (aiMetrics.totalBtcYield * latest.btcPrice) + 
+                         (aiMetrics.totalEthYield * latest.ethPrice) + 
+                         aiMetrics.totalUsdtYield;
+
+    const elPureApr = document.getElementById('ai-pure-apr-value');
+    const elCapGains = document.getElementById('ai-cap-gains-value');
+    const elBtcBasis = document.getElementById('ai-btc-basis');
+    const elEthBasis = document.getElementById('ai-eth-basis');
+
+    if (elPureApr) elPureApr.textContent = fCur.format(pureAprValue);
+    if (elCapGains) {
+        elCapGains.textContent = (aiMetrics.realizedCapitalGains >= 0 ? '+' : '') + fCur.format(aiMetrics.realizedCapitalGains);
+        elCapGains.className = 'value ' + (aiMetrics.realizedCapitalGains >= 0 ? 'highlight-positive' : 'highlight-negative');
+    }
+    if (elBtcBasis) elBtcBasis.textContent = btcBasisAvg > 0 ? fCur.format(btcBasisAvg) : 'N/A';
+    if (elEthBasis) elEthBasis.textContent = ethBasisAvg > 0 ? fCur.format(ethBasisAvg) : 'N/A';
+
     calculateSmartAnalysis(trueLedgerData, latest, finalAdjustedInvested, daysElapsed, avgDailyInflow);
     renderPriceHistoryChart(trueLedgerData);
     renderHoldingsChart(trueLedgerData);
