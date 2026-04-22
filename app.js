@@ -512,19 +512,30 @@ function processAndRender(rawData) {
     const pureAprValue = (aiMetrics.totalBtcYield * latest.btcPrice) + 
                          (aiMetrics.totalEthYield * latest.ethPrice) + 
                          aiMetrics.totalUsdtYield;
+                         
+    // Capital Gains = Total Return - Pure APR (This captures both Realized and Unrealized gains accurately)
+    const totalCapitalGains = overallGainAmount - pureAprValue;
 
     const elPureApr = document.getElementById('ai-pure-apr-value');
     const elCapGains = document.getElementById('ai-cap-gains-value');
     const elBtcBasis = document.getElementById('ai-btc-basis');
     const elEthBasis = document.getElementById('ai-eth-basis');
 
-    if (elPureApr) elPureApr.textContent = fCur.format(pureAprValue);
-    if (elCapGains) {
-        elCapGains.textContent = (aiMetrics.realizedCapitalGains >= 0 ? '+' : '') + fCur.format(aiMetrics.realizedCapitalGains);
-        elCapGains.className = 'value ' + (aiMetrics.realizedCapitalGains >= 0 ? 'highlight-positive' : 'highlight-negative');
+    if (elPureApr) {
+        let formattedApr = fCur.format(pureAprValue);
+        // Show micro-yields if they exist but are less than 1 cent
+        if (pureAprValue > 0 && pureAprValue < 0.01) formattedApr = '+$' + pureAprValue.toFixed(4);
+        elPureApr.textContent = formattedApr;
     }
-    if (elBtcBasis) elBtcBasis.textContent = btcBasisAvg > 0 ? fCur.format(btcBasisAvg) : 'N/A';
-    if (elEthBasis) elEthBasis.textContent = ethBasisAvg > 0 ? fCur.format(ethBasisAvg) : 'N/A';
+    
+    if (elCapGains) {
+        elCapGains.textContent = (totalCapitalGains >= 0 ? '+' : '') + fCur.format(totalCapitalGains);
+        elCapGains.className = 'value ' + (totalCapitalGains >= 0 ? 'highlight-positive' : 'highlight-negative');
+    }
+    
+    // Fallback display if calculation resulted in NaN or 0
+    if (elBtcBasis) elBtcBasis.textContent = (btcBasisAvg > 0) ? fCur.format(btcBasisAvg) : (isNaN(btcBasisAvg) ? 'Err' : '$0.00');
+    if (elEthBasis) elEthBasis.textContent = (ethBasisAvg > 0) ? fCur.format(ethBasisAvg) : (isNaN(ethBasisAvg) ? 'Err' : '$0.00');
 
     calculateSmartAnalysis(trueLedgerData, latest, finalAdjustedInvested, daysElapsed, avgDailyInflow);
     renderPriceHistoryChart(trueLedgerData);
