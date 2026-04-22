@@ -198,12 +198,16 @@ function setupViews() {
     const switchView = (viewId) => {
         views.forEach(v => v.classList.remove('active-view'));
         viewBtns.forEach(b => b.classList.remove('active'));
+        mobileTabBtns.forEach(b => b.classList.remove('active'));
         
         const targetView = document.getElementById(`view-${viewId}`);
         if (targetView) targetView.classList.add('active-view');
         
         const targetBtn = document.querySelector(`.view-btn[data-view="${viewId}"]`);
         if (targetBtn) targetBtn.classList.add('active');
+
+        const targetMobileBtn = document.querySelector(`.tab-btn[data-tab="${viewId === 'intelligence' ? 'analysis' : 'terminal'}"]`);
+        if (targetMobileBtn) targetMobileBtn.classList.add('active');
     };
 
     viewBtns.forEach(btn => {
