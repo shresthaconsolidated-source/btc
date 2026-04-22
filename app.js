@@ -630,8 +630,88 @@ function processAndRender(rawData) {
 
     calculateDisciplineScore(trueLedgerData);
     calculateSmartAnalysis(trueLedgerData, latest, finalAdjustedInvested, daysElapsed, avgDailyInflow);
+    calculateRiskMetrics(trueLedgerData, latest, aiMetrics, finalAdjustedInvested, overallGainAmount);
     renderPriceHistoryChart(trueLedgerData);
     renderHoldingsChart(trueLedgerData);
+}
+
+// ==========================================
+// Risk & Performance Metrics Engine
+// ==========================================
+function calculateRiskMetrics(data, latest, aiMetrics, basis, overallGain, logReturns) {
+
+    // --- 1. Daily P&L (Today vs Yesterday) ---
+    if (data.length >= 2) {
+        const today = data[data.length - 1];
+        const yesterday = data[data.length - 2];
+        const dailyDelta = today.totalValue - yesterday.totalValue;
+        const dailyDeltaPct = yesterday.totalValue > 0 ? (dailyDelta / yesterday.totalValue) * 100 : 0;
+        const pnlEl = document.getElementById('kpi-daily-pnl');
+        const pnlPctEl = document.getElementById('kpi-daily-pnl-pct');
+        const pnlCard = document.getElementById('kpi-daily-pnl-card');
+        if (pnlEl) {
+            pnlEl.textContent = `${dailyDelta >= 0 ? '+' : ''}${fCur.format(dailyDelta)}`;
+            pnlEl.style.color = dailyDelta >= 0 ? 'var(--positive)' : 'var(--negative)';
+        }
+        if (pnlPctEl) pnlPctEl.textContent = `${dailyDeltaPct >= 0 ? '+' : ''}${dailyDeltaPct.toFixed(2)}% vs. yesterday`;
+        if (pnlCard) pnlCard.style.borderColor = dailyDelta >= 0 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)';
+    }
+
+    // --- 2. Sharpe Ratio ---
+    // Uses daily log returns already computed in calculateSmartAnalysis
+    // We recompute them here for independence
+    const dailyReturns = [];
+    for (let i = 1; i < data.length; i++) {
+        const prev = data[i-1];
+        const curr = data[i];
+        const r = (curr.totalValue - prev.totalValue - curr.inflow) / (prev.totalValue || 1);
+        dailyReturns.push(r);
+    }
+    const sharpeEl = document.getElementById('kpi-sharpe');
+    const sharpeLabelEl = document.getElementById('kpi-sharpe-label');
+    if (dailyReturns.length > 1) {
+        const meanReturn = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
+        const variance = dailyReturns.reduce((a, b) => a + Math.pow(b - meanReturn, 2), 0) / dailyReturns.length;
+        const stdDev = Math.sqrt(variance);
+        // Annualized Sharpe (risk-free rate ~4.5% / 365)
+        const riskFreeDaily = 0.045 / 365;
+        const sharpe = stdDev > 0 ? ((meanReturn - riskFreeDaily) / stdDev) * Math.sqrt(365) : 0;
+        if (sharpeEl) {
+            sharpeEl.textContent = sharpe.toFixed(2);
+            sharpeEl.style.color = sharpe >= 1 ? 'var(--positive)' : sharpe >= 0 ? 'var(--text-primary)' : 'var(--negative)';
+        }
+        if (sharpeLabelEl) {
+            sharpeLabelEl.textContent = sharpe >= 2 ? 'Excellent' : sharpe >= 1 ? 'Good' : sharpe >= 0 ? 'Acceptable' : 'Poor';
+        }
+    }
+
+    // --- 3. BTC / ETH Sensitivity ($ impact of a 10% price move) ---
+    const btcValue = latest.btcBal * latest.btcPrice;
+    const ethValue = latest.ethBal * latest.ethPrice;
+    const btcSensitivity = btcValue * 0.10;
+    const ethSensitivity = ethValue * 0.10;
+    const btcSensEl = document.getElementById('risk-btc-sensitivity');
+    const ethSensEl = document.getElementById('risk-eth-sensitivity');
+    if (btcSensEl) btcSensEl.textContent = `${fCur.format(btcSensitivity)}`;
+    if (ethSensEl) ethSensEl.textContent = `${fCur.format(ethSensitivity)}`;
+
+    // --- 4. Break-Even Price Calculator ---
+    // Break-even BTC price: price at which portfolio value == adjusted basis
+    // Portfolio = btcBal*btcP + ethBal*ethP + stable
+    // We solve for btcP when total == basis: btcP = (basis - ethVal - stable) / btcBal
+    const stableValue = latest.usdtBal + latest.usdcBal;
+    const btcBreakEven = latest.btcBal > 0 ? (basis - (ethValue) - stableValue) / latest.btcBal : 0;
+    const ethBreakEven = latest.ethBal > 0 ? (basis - (btcValue) - stableValue) / latest.ethBal : 0;
+    const btcBreakEl = document.getElementById('risk-btc-breakeven');
+    const ethBreakEl = document.getElementById('risk-eth-breakeven');
+    if (btcBreakEl) {
+        btcBreakEl.textContent = btcBreakEven > 0 ? fCur.format(btcBreakEven) : 'N/A';
+        btcBreakEl.style.color = btcBreakEven < latest.btcPrice ? 'var(--positive)' : 'var(--negative)';
+    }
+    if (ethBreakEl) {
+        ethBreakEl.textContent = ethBreakEven > 0 ? fCur.format(ethBreakEven) : 'N/A';
+        ethBreakEl.style.color = ethBreakEven < latest.ethPrice ? 'var(--positive)' : 'var(--negative)';
+    }
 }
 
 function calculateDisciplineScore(data) {
