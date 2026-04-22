@@ -354,10 +354,16 @@ function runReconciliationEngine(data) {
             metrics.realizedCapitalGains += ((ethSold * curr.ethPrice) - costOfSold);
         }
 
-        // USDT Pure Yield Detection (If USDT went up significantly without selling assets)
-        // Threshold lowered to 0.001 to catch fractional cent yield jumps
-        if (cleanDUsdt > 0.001 && dBtc >= -0.00000001 && dEth >= -0.00000001) {
-            metrics.totalUsdtYield += cleanDUsdt;
+        // USDT Pure Yield Detection
+        let expectedProceeds = 0;
+        if (dBtc < -0.00000001) expectedProceeds += Math.abs(dBtc) * curr.btcPrice;
+        if (dEth < -0.00000001) expectedProceeds += Math.abs(dEth) * curr.ethPrice;
+        
+        let unexplainedUsdtIncrease = cleanDUsdt - expectedProceeds;
+        
+        // If USDT went up more than the proceeds of any sold assets, the excess is yield.
+        if (unexplainedUsdtIncrease > 0.001) {
+            metrics.totalUsdtYield += unexplainedUsdtIncrease;
         }
         
         if (metrics.btcCostBasis < 0) metrics.btcCostBasis = 0;
