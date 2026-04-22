@@ -399,7 +399,18 @@ function processAndRender(rawData) {
             inflowOther: inOther,
             inflowWodl: inWodl,
             inflow: inOther, // WODL is yield, not principal. This ensures Capital Gain is 0 when prices are flat.
-            totalInvestment: 'Total Investment (USD)' in row ? getVal(row, 'Total Investment (USD)') : undefined,
+            totalInvestment: (function(r) {
+                const possibleMatches = ['total invest', 'cumulative balance', 'cumulative invest', 'adjusted basis'];
+                for (let actualKey of Object.keys(r)) {
+                    const lowerKey = actualKey.toLowerCase();
+                    for (let match of possibleMatches) {
+                        if (lowerKey.includes(match) && r[actualKey] !== '') {
+                            return getVal(r, actualKey);
+                        }
+                    }
+                }
+                return undefined;
+            })(row),
             outflow: 0,
             totalValue: getVal(row, 'Total Portfolio Value (USD)'),
             dailyGainPct: getVal(row, 'Daily Gain/Loss (%)')
