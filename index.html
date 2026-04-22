@@ -26,12 +26,18 @@
                 <h1>QUANTUM <span class="badge">TERMINAL V2</span></h1>
             </div>
             
-            <nav class="view-nav">
+            <!-- Desktop nav (hidden on mobile) -->
+            <nav class="view-nav hide-mobile">
                 <button class="view-btn active" data-view="terminal">Terminal</button>
                 <button class="view-btn" data-view="intelligence">Intelligence</button>
             </nav>
 
             <div class="header-actions">
+                <!-- Mobile tab switcher in header -->
+                <div class="mobile-view-toggle show-mobile">
+                    <button class="view-btn active" data-view="terminal">Terminal</button>
+                    <button class="view-btn" data-view="intelligence">Intel</button>
+                </div>
 
                 <button class="btn-primary" id="btn-new-entry">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -40,7 +46,7 @@
                 <button class="btn-icon" id="btn-settings" title="Webhook Settings">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </button>
-                <div class="status-container">
+                <div class="status-container hide-mobile">
                     <span class="status-dot pulsing"></span>
                     <span class="status-text" id="last-updated">Syncing Live Data...</span>
                 </div>
@@ -52,28 +58,31 @@
             <!-- Live Intelligence Bar -->
             <section class="live-ticker glass">
                 <div class="ticker-item">
-                    <span class="ticker-label">BTC</span>
-                    <span class="ticker-price" id="live-btc-price">---</span>
-                    <span class="ticker-change" id="live-btc-change">---</span>
-                </div>
-                <div class="ticker-divider"></div>
-                <div class="ticker-item">
-                    <span class="ticker-label">ETH</span>
-                    <span class="ticker-price" id="live-eth-price">---</span>
-                    <span class="ticker-change" id="live-eth-change">---</span>
-                </div>
-                <div class="ticker-divider"></div>
-                <div class="ticker-item highlight">
-                    <span class="ticker-label">Price Impact</span>
-                    <span class="ticker-price" id="portfolio-impact">---</span>
-                </div>
-                <div class="ticker-divider"></div>
-                <div class="ticker-item">
                     <span class="ticker-label">APR Target</span>
                     <div class="apr-target-pill">
                         <div class="apr-progress" id="apr-progress-bar" style="width: 0%"></div>
                         <span class="apr-text" id="apr-target-text">0% / 40%</span>
                     </div>
+                </div>
+                <div class="ticker-divider"></div>
+                <div class="ticker-item">
+                    <span class="ticker-label">Portfolio Value</span>
+                    <span class="ticker-price" id="ticker-portfolio-value">---</span>
+                </div>
+                <div class="ticker-divider"></div>
+                <div class="ticker-item">
+                    <span class="ticker-label">Overall Return</span>
+                    <span class="ticker-price" id="ticker-overall-return">---</span>
+                </div>
+                <div class="ticker-divider"></div>
+                <div class="ticker-item">
+                    <span class="ticker-label">Long-Term CAGR</span>
+                    <span class="ticker-price" id="ticker-cagr">---</span>
+                </div>
+                <div class="ticker-divider"></div>
+                <div class="ticker-item" id="last-updated-wrapper">
+                    <span class="ticker-label">Sync</span>
+                    <span class="status-text" id="last-updated" style="font-size:0.8rem; color: var(--positive);">Syncing...</span>
                 </div>
             </section>
 
@@ -296,11 +305,6 @@
             </div>
         </main>
 
-        <!-- MOBILE NAVIGATION -->
-        <div class="mobile-tabs hide-desktop">
-            <button class="tab-btn active" data-tab="terminal">Terminal</button>
-            <button class="tab-btn" data-tab="analysis">Intelligence</button>
-        </div>
     </div>
 
     <!-- AI Thinking Overlay -->

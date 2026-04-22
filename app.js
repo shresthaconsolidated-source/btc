@@ -192,19 +192,19 @@ function setupModals() {
 
 function setupViews() {
     const viewBtns = document.querySelectorAll('.view-btn');
-    const mobileTabBtns = document.querySelectorAll('.tab-btn'); // For mobile compat
+    const mobileTabBtns = document.querySelectorAll('.tab-btn'); // legacy bottom tabs
     const views = document.querySelectorAll('main');
     
     const switchView = (viewId) => {
         views.forEach(v => v.classList.remove('active-view'));
-        viewBtns.forEach(b => b.classList.remove('active'));
+        // sync all view-btn elements (desktop nav + mobile toggle)
+        viewBtns.forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-view') === viewId);
+        });
         mobileTabBtns.forEach(b => b.classList.remove('active'));
         
         const targetView = document.getElementById(`view-${viewId}`);
         if (targetView) targetView.classList.add('active-view');
-        
-        const targetBtn = document.querySelector(`.view-btn[data-view="${viewId}"]`);
-        if (targetBtn) targetBtn.classList.add('active');
 
         const targetMobileBtn = document.querySelector(`.tab-btn[data-tab="${viewId === 'intelligence' ? 'analysis' : 'terminal'}"]`);
         if (targetMobileBtn) targetMobileBtn.classList.add('active');
@@ -214,7 +214,7 @@ function setupViews() {
         btn.addEventListener('click', () => switchView(btn.getAttribute('data-view')));
     });
 
-    // Mobile fallback if user clicks bottom tabs
+    // Legacy bottom tab buttons
     mobileTabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const tab = btn.getAttribute('data-tab');
@@ -613,6 +613,20 @@ function processAndRender(rawData) {
     // Fallback display if calculation resulted in NaN or 0
     if (elBtcBasis) elBtcBasis.textContent = (btcBasisAvg > 0) ? fCur.format(btcBasisAvg) : (isNaN(btcBasisAvg) ? 'Err' : '$0.00');
     if (elEthBasis) elEthBasis.textContent = (ethBasisAvg > 0) ? fCur.format(ethBasisAvg) : (isNaN(ethBasisAvg) ? 'Err' : '$0.00');
+
+    // --- Populate secondary ticker bar ---
+    const tickerVal = document.getElementById('ticker-portfolio-value');
+    const tickerReturn = document.getElementById('ticker-overall-return');
+    const tickerCagr = document.getElementById('ticker-cagr');
+    if (tickerVal) tickerVal.textContent = fCur.format(latest.totalValue);
+    if (tickerReturn) {
+        tickerReturn.textContent = `${overallGainPct >= 0 ? '+' : ''}${(overallGainPct*100).toFixed(2)}%`;
+        tickerReturn.style.color = overallGainPct >= 0 ? 'var(--positive)' : 'var(--negative)';
+    }
+    if (tickerCagr) {
+        tickerCagr.textContent = `${cagr >= 0 ? '+' : ''}${(cagr*100).toFixed(2)}%`;
+        tickerCagr.style.color = cagr >= 0 ? 'var(--positive)' : 'var(--negative)';
+    }
 
     calculateDisciplineScore(trueLedgerData);
     calculateSmartAnalysis(trueLedgerData, latest, finalAdjustedInvested, daysElapsed, avgDailyInflow);
