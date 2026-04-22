@@ -304,12 +304,13 @@ function runReconciliationEngine(data) {
         let dEth = curr.ethBal - prev.ethBal;
         
         let dUsdtRaw = (curr.usdtBal + curr.usdcBal) - (prev.usdtBal + prev.usdcBal);
-        let cleanDUsdt = dUsdtRaw - curr.inflow; 
+        // cleanDUsdt represents change in stablecoins minus ANY fresh capital injected
+        let cleanDUsdt = dUsdtRaw - curr.inflowOther; 
         let usdtSpentOnTrades = 0;
 
         // BTC Reconciliation
         if (dBtc > 0.00000001) {
-            if (cleanDUsdt < -1) { // Up-Down (Buy)
+            if (cleanDUsdt < -0.01) { // Up-Down (Buy)
                 let expectedBtcBought = Math.abs(cleanDUsdt) / curr.btcPrice;
                 if (dBtc > expectedBtcBought) {
                     metrics.totalBtcYield += (dBtc - expectedBtcBought);
@@ -334,7 +335,7 @@ function runReconciliationEngine(data) {
         // ETH Reconciliation
         let remainingUsdtDrop = cleanDUsdt + usdtSpentOnTrades; // If some was used for BTC
         if (dEth > 0.00000001) {
-            if (remainingUsdtDrop < -1) { 
+            if (remainingUsdtDrop < -0.01) { 
                 let expectedEthBought = Math.abs(remainingUsdtDrop) / curr.ethPrice;
                 if (dEth > expectedEthBought) {
                     metrics.totalEthYield += (dEth - expectedEthBought);
@@ -354,7 +355,8 @@ function runReconciliationEngine(data) {
         }
 
         // USDT Pure Yield Detection (If USDT went up significantly without selling assets)
-        if (cleanDUsdt > 1 && dBtc >= -0.00000001 && dEth >= -0.00000001) {
+        // Threshold lowered to 0.001 to catch fractional cent yield jumps
+        if (cleanDUsdt > 0.001 && dBtc >= -0.00000001 && dEth >= -0.00000001) {
             metrics.totalUsdtYield += cleanDUsdt;
         }
         
@@ -380,7 +382,9 @@ function processAndRender(rawData) {
             ethPrice: getVal(row, 'ETH Price (USD)'),
             usdtBal: getVal(row, 'USDT Balance'),
             usdcBal: getVal(row, 'USDC Balance'),
-            inflow: inWodl + inOther,
+            inflowOther: inOther,
+            inflowWodl: inWodl,
+            inflow: inOther, // Adjusted Basis ONLY cares about fresh fiat
             outflow: 0,
             totalValue: getVal(row, 'Total Portfolio Value (USD)'),
             dailyGainPct: getVal(row, 'Daily Gain/Loss (%)')
@@ -410,7 +414,7 @@ function processAndRender(rawData) {
     for (let i = 0; i < trueLedgerData.length; i++) {
         const d = trueLedgerData[i];
         
-        grossInflowsForAvg += d.inflow;
+        grossInflowsForAvg += (d.inflowWodl + d.inflowOther);
 
         if (i > 0) {
             totalInflows += d.inflow;
