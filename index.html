@@ -146,6 +146,16 @@
         <main id="view-intelligence">
             <div class="intelligence-layout">
                 <div class="intel-sidebar">
+                    <div class="analysis-card glass briefing-banner" style="border-left: 3px solid var(--accent-blue);">
+                        <div class="header-with-badge">
+                            <h3>Morning Briefing</h3>
+                            <span class="badge-ml" style="background: var(--accent-blue);">AGENT</span>
+                        </div>
+                        <p id="intel-briefing-text" class="text-primary" style="font-size: 0.85rem; margin-top: 0.75rem; line-height: 1.5; font-weight: 300;">
+                            Analyzing portfolio state...
+                        </p>
+                    </div>
+
                     <div class="analysis-card glass">
                         <div class="header-with-badge">
                             <h3>Smart CAGR</h3>
@@ -186,8 +196,9 @@
                                 <span class="value highlight-positive" id="intel-alpha-value">--</span>
                             </div>
                         </div>
-                        <div class="metric-footer" style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 0.5rem;">
+                        <div class="metric-footer" style="margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
                             <span class="label" id="intel-alpha-note">Outperforming Market Index</span>
+                            <span class="badge-ml" id="intel-market-regime" style="background: var(--bg-glass);">Detecting...</span>
                         </div>
                     </div>
 
@@ -202,7 +213,7 @@
                                         <th>Target</th>
                                         <th class="col-worst">Worst</th>
                                         <th class="col-mod">Mod</th>
-                                        <th class="col-best">Best</th>
+                                        <th class="col-best">Prob.</th>
                                     </tr>
                                 </thead>
                                 <tbody id="milestone-scenarios">
@@ -259,6 +270,16 @@
                                 <span class="value-sm" style="color: #627eea;" id="ai-eth-basis">--</span>
                             </div>
                         </div>
+                        <div class="metric-row" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-glass);">
+                            <div class="metric-item">
+                                <span class="label">DCA Discipline Score</span>
+                                <span class="value text-gradient" id="ai-discipline-score">--</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="label">Behavior</span>
+                                <span class="value-sm" id="ai-discipline-label" style="color: var(--text-secondary);">--</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -277,6 +298,14 @@
 
 
         </section>
+    </div>
+
+    <!-- AI Thinking Overlay -->
+    <div class="ai-thinking-overlay" id="ai-thinking-overlay">
+        <div class="ai-thinking-content">
+            <div class="logo-orb" style="width: 48px; height: 48px; margin-bottom: 1.5rem; animation-duration: 1.5s;"></div>
+            <div class="ai-thinking-text" id="ai-thinking-text">Initializing Quantum Engine...</div>
+        </div>
     </div>
 
     <!-- MODAL OVERLAYS -->

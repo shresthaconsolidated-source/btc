@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 async function initApp() {
+    simulateAIThinking();
     try {
         // Appending a timestamp forces Google's cache to bust slightly faster
         const response = await fetch(CSV_URL + '&t=' + new Date().getTime());
@@ -48,13 +49,49 @@ async function initApp() {
                 processAndRender(results.data);
                 document.getElementById('last-updated').textContent = `Live Sync Complete`;
                 document.querySelector('.status-dot').classList.remove('pulsing');
+                setTimeout(stopAIThinking, 800);
             }
         });
     } catch (error) {
         document.getElementById('last-updated').textContent = "Sync Failed!";
         document.getElementById('last-updated').style.color = "var(--negative)";
         document.querySelector('.status-dot').style.backgroundColor = "var(--negative)";
+        stopAIThinking();
     }
+}
+
+function simulateAIThinking() {
+    const overlay = document.getElementById('ai-thinking-overlay');
+    const textEl = document.getElementById('ai-thinking-text');
+    if (!overlay || !textEl) return;
+    
+    overlay.classList.add('active');
+    
+    const phrases = [
+        "Initializing Quantum Engine...",
+        "Fetching On-Chain Metrics...",
+        "Reconciling Cost Basis...",
+        "Running Monte Carlo Sims...",
+        "Isolating True Yield..."
+    ];
+    
+    let i = 0;
+    textEl.textContent = phrases[0];
+    const interval = setInterval(() => {
+        i++;
+        if (i < phrases.length) {
+            textEl.textContent = phrases[i];
+        }
+    }, 600);
+    
+    overlay.dataset.interval = interval;
+}
+
+function stopAIThinking() {
+    const overlay = document.getElementById('ai-thinking-overlay');
+    if (!overlay) return;
+    clearInterval(parseInt(overlay.dataset.interval));
+    overlay.classList.remove('active');
 }
 
 function setupModals() {
@@ -573,9 +610,94 @@ function processAndRender(rawData) {
     if (elBtcBasis) elBtcBasis.textContent = (btcBasisAvg > 0) ? fCur.format(btcBasisAvg) : (isNaN(btcBasisAvg) ? 'Err' : '$0.00');
     if (elEthBasis) elEthBasis.textContent = (ethBasisAvg > 0) ? fCur.format(ethBasisAvg) : (isNaN(ethBasisAvg) ? 'Err' : '$0.00');
 
+    calculateDisciplineScore(trueLedgerData);
     calculateSmartAnalysis(trueLedgerData, latest, finalAdjustedInvested, daysElapsed, avgDailyInflow);
     renderPriceHistoryChart(trueLedgerData);
     renderHoldingsChart(trueLedgerData);
+}
+
+function calculateDisciplineScore(data) {
+    let score = 50; 
+    let totalInflowEvents = 0;
+    
+    for (let i = 1; i < data.length; i++) {
+        if (data[i].inflowOther > 0) {
+            totalInflowEvents++;
+            if (data[i].dailyGainPct < -1.0) {
+                score += 8; // Dip Buying
+            } else if (data[i].dailyGainPct > 1.0) {
+                score -= 8; // FOMO
+            } else {
+                score += 2; // Systematic
+            }
+        }
+    }
+    
+    score = Math.max(0, Math.min(100, score));
+    
+    let label = "Systematic";
+    let color = "var(--text-secondary)";
+    if (totalInflowEvents === 0) {
+        score = 0; label = "No Data";
+    } else if (score >= 80) {
+        label = "Contrarian / Dip Buyer"; color = "var(--positive)";
+    } else if (score >= 60) {
+        label = "Disciplined DCA"; color = "var(--accent-blue)";
+    } else if (score <= 30) {
+        label = "High FOMO Risk"; color = "var(--negative)";
+    } else {
+        label = "Momentum Chaser"; color = "var(--text-secondary)";
+    }
+    
+    const scoreEl = document.getElementById('ai-discipline-score');
+    const labelEl = document.getElementById('ai-discipline-label');
+    if (scoreEl) { scoreEl.textContent = score.toFixed(0) + "/100"; scoreEl.style.color = color; }
+    if (labelEl) { labelEl.textContent = label; labelEl.style.color = color; }
+}
+
+function detectMarketRegime(data) {
+    if (data.length < 14) return { regime: "Gathering Data", color: "var(--text-muted)", isBull: false };
+    
+    const latest = data[data.length - 1];
+    const past14 = data[data.length - 14];
+    
+    const btcTrend = (latest.btcPrice - past14.btcPrice) / past14.btcPrice;
+    const ethTrend = (latest.ethPrice - past14.ethPrice) / past14.ethPrice;
+    const avgTrend = (btcTrend + ethTrend) / 2;
+    
+    let maxDrop = false;
+    for(let i = data.length - 7; i < data.length; i++) {
+        if(data[i].dailyGainPct < -5) maxDrop = true;
+    }
+    
+    if (maxDrop) return { regime: "High Volatility", color: "var(--accent-indigo)", isBull: false };
+    if (avgTrend > 0.08) return { regime: "Bull Phase", color: "var(--positive)", isBull: true };
+    if (avgTrend < -0.08) return { regime: "Accumulation", color: "var(--negative)", isBull: false };
+    return { regime: "Crab (Ranging)", color: "var(--text-secondary)", isBull: false };
+}
+
+function generateMorningBriefing(regimeData, alpha) {
+    const textEl = document.getElementById('intel-briefing-text');
+    if (!textEl) return;
+    
+    const alphaStr = (Math.abs(alpha) * 100).toFixed(1);
+    const isOutperforming = alpha > 0;
+    
+    let sentence1 = `Good morning. The market is currently in a ${regimeData.regime.toLowerCase()} state. `;
+    let sentence2 = isOutperforming ? 
+        `Your portfolio is outperforming the benchmark by ${alphaStr}%, demonstrating strong yield cushioning. ` : 
+        `Your portfolio is trailing the index by ${alphaStr}%; monitor asset allocation. `;
+        
+    let sentence3 = "";
+    if (regimeData.regime === "Crab (Ranging)" || regimeData.regime === "Gathering Data") {
+        sentence3 = "Volatility is low; recommended to tighten Dual Investment spreads to capture higher APR.";
+    } else if (regimeData.isBull) {
+        sentence3 = "Strong upward momentum detected; consider widening strikes to avoid premature assignment.";
+    } else {
+        sentence3 = "Defensive positioning recommended. Stablecoin yield provides a strong buffer here.";
+    }
+    
+    textEl.textContent = sentence1 + sentence2 + sentence3;
 }
 
 function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
@@ -638,13 +760,19 @@ function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     document.getElementById('ml-stability').textContent = (stabilityFactor * 100).toFixed(1) + '%';
     document.getElementById('ml-expected-cagr').textContent = (smartCAGR >= 0 ? '+' : '') + fPct.format(smartCAGR);
 
+    // Update Regime & Briefing
+    const regimeData = detectMarketRegime(data);
+    const regimeEl = document.getElementById('intel-market-regime');
+    if (regimeEl) {
+        regimeEl.textContent = regimeData.regime;
+        regimeEl.style.color = regimeData.color;
+    }
+    generateMorningBriefing(regimeData, alpha);
+
     // 3. Scenario Logic
-    // Worst: 0% market growth
-    // Moderate: Scaled performance (cap high outliers for small datasets)
-    // Best: Current Smart CAGR momentum
     const r_worst = 0;
     const r_mod = (data.length < 14) ? Math.min(smartCAGR, 0.20) : smartCAGR; 
-    const r_best = smartCAGR;
+    const annStdDev = stdDev * Math.sqrt(365) || 0.5;
 
     // 4. Milestone Scenarios Rendering
     const targets = [1000, 10000, 20000, 50000, 100000];
@@ -673,19 +801,43 @@ function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
         return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     };
 
+    const normalCDF = (x) => {
+        let t = 1 / (1 + 0.2316419 * Math.abs(x));
+        let d = 0.3989423 * Math.exp(-x * x / 2);
+        let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+        return x > 0 ? 1 - p : p;
+    };
+
     targets.forEach(target => {
         if (target <= latest.totalValue) return;
 
         const dWorst = calculateDays(target, r_worst, avgInflow, latest.totalValue);
         const dMod = calculateDays(target, r_mod, avgInflow, latest.totalValue);
-        const dBest = calculateDays(target, r_best, avgInflow, latest.totalValue);
+
+        let prob = 0;
+        if (annStdDev > 0 && r_mod > -0.99) {
+            const requiredReturn = (target - (avgInflow * 365)) / latest.totalValue;
+            if (requiredReturn > 0) {
+                const lnReq = Math.log(requiredReturn);
+                const lnExpected = Math.log(1 + r_mod);
+                const z = (lnExpected - lnReq) / annStdDev;
+                prob = normalCDF(z);
+            }
+        }
+        
+        let probStr = "---";
+        if (prob > 0) {
+            if (prob > 0.99) probStr = ">99%";
+            else if (prob < 0.01) probStr = "<1%";
+            else probStr = (prob * 100).toFixed(0) + "%";
+        }
 
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${fCur.format(target)}</td>
             <td class="col-worst">${formatDate(dWorst)}</td>
             <td class="col-mod">${formatDate(dMod)}</td>
-            <td class="col-best">${formatDate(dBest)}</td>
+            <td class="col-best" style="color: var(--positive);">${probStr}</td>
         `;
         tbody.appendChild(row);
     });
