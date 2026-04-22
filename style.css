@@ -194,10 +194,9 @@ main.active-view { display: flex; flex-direction: column; gap: 1rem; }
 /* ========================================================
    Intelligence View Layout
    ======================================================== */
-#view-intelligence { flex-direction: column; }
-.intelligence-layout { display: flex; gap: var(--card-gap); flex: 1; min-height: 0; }
-.intel-sidebar { flex: 1.2; display: flex; flex-direction: column; gap: var(--card-gap); min-width: 320px; }
-.intel-main { flex: 2; display: flex; flex-direction: column; gap: var(--card-gap); overflow-y: auto; padding-right: 0.25rem; }
+.intelligence-layout { display: flex; flex-direction: column; gap: var(--card-gap); flex: 1; min-height: 0; }
+.intel-sidebar { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--card-gap); flex-shrink: 0; }
+.intel-main { flex: 1; display: flex; flex-direction: row; gap: var(--card-gap); min-height: 0; }
 .intel-chart-row { min-height: 0; flex: 1; }
 
 .intel-apr-card { background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), transparent); border: 1px solid rgba(16, 185, 129, 0.2); }
