@@ -390,7 +390,7 @@ function processAndRender(rawData) {
             usdcBal: getVal(row, 'USDC Balance'),
             inflowOther: inOther,
             inflowWodl: inWodl,
-            inflow: inOther, // Adjusted Basis ONLY cares about fresh fiat
+            inflow: inWodl + inOther, // User prefers Adjusted Basis to include reinvested WODL
             outflow: 0,
             totalValue: getVal(row, 'Total Portfolio Value (USD)'),
             dailyGainPct: getVal(row, 'Daily Gain/Loss (%)')
