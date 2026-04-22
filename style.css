@@ -17,6 +17,8 @@
     --positive-bg: rgba(16, 185, 129, 0.15);
     --negative: #ef4444;
     --negative-bg: rgba(239, 68, 68, 0.15);
+    --card-padding: 0.75rem;
+    --card-gap: 0.75rem;
     
     --font-heading: 'Space Grotesk', sans-serif;
     --font-body: 'Outfit', sans-serif;
@@ -168,7 +170,7 @@ td { font-size: 0.85rem; font-variant-numeric: tabular-nums; }
     display: none; justify-content: space-between; gap: 0.5rem; flex-shrink: 0;
 }
 .tab-btn {
-    flex: 1; padding: 0.75rem; background: rgba(255,255,255,0.03);
+    flex: 1; padding: 0.5rem; background: rgba(255,255,255,0.03);
     border: 1px solid var(--border-glass); color: var(--text-secondary);
     border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
     transition: 0.2s;
@@ -193,10 +195,10 @@ main.active-view { display: flex; flex-direction: column; gap: 1rem; }
    Intelligence View Layout
    ======================================================== */
 #view-intelligence { flex-direction: column; }
-.intelligence-layout { display: flex; gap: 1.5rem; flex: 1; min-height: 0; }
-.intel-sidebar { flex: 1; display: flex; flex-direction: column; gap: 1.5rem; }
-.intel-main { flex: 2; display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; padding-right: 0.5rem; }
-.intel-chart-row { min-height: 400px; flex: 1; }
+.intelligence-layout { display: flex; gap: var(--card-gap); flex: 1; min-height: 0; }
+.intel-sidebar { flex: 1.2; display: flex; flex-direction: column; gap: var(--card-gap); min-width: 320px; }
+.intel-main { flex: 2; display: flex; flex-direction: column; gap: var(--card-gap); overflow-y: auto; padding-right: 0.25rem; }
+.intel-chart-row { min-height: 0; flex: 1; }
 
 .intel-apr-card { background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), transparent); border: 1px solid rgba(16, 185, 129, 0.2); }
 .apr-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem; }
@@ -222,7 +224,7 @@ main.active-view { display: flex; flex-direction: column; gap: 1rem; }
 .analysis-grid .chart-container { flex: 2; }
 .analysis-sidebar { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
 
-.analysis-card { padding: 1.5rem; display: flex; flex-direction: column; }
+.analysis-card { padding: var(--card-padding); display: flex; flex-direction: column; }
 .header-with-badge { display: flex; justify-content: space-between; align-items: flex-start; }
 .badge-ml { font-size: 0.55rem; background: var(--accent-indigo); color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 800; letter-spacing: 0.5px; }
 
@@ -255,7 +257,7 @@ main.active-view { display: flex; flex-direction: column; gap: 1rem; }
     text-align: left; padding: 0.5rem; color: var(--text-muted); 
     border-bottom: 1px solid var(--border-glass); text-transform: uppercase; font-size: 0.6rem;
 }
-.scenario-table td { padding: 0.6rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.scenario-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
 .scenario-table .col-worst { color: var(--text-muted); }
 .scenario-table .col-mod { color: var(--accent-blue); font-weight: 600; }
 .scenario-table .col-best { color: var(--positive); font-weight: 600; }
