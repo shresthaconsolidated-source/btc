@@ -390,7 +390,7 @@ function processAndRender(rawData) {
             usdcBal: getVal(row, 'USDC Balance'),
             inflowOther: inOther,
             inflowWodl: inWodl,
-            inflow: inWodl + inOther, // User prefers Adjusted Basis to include reinvested WODL
+            inflow: inOther, // WODL is yield, not principal. This ensures Capital Gain is 0 when prices are flat.
             outflow: 0,
             totalValue: getVal(row, 'Total Portfolio Value (USD)'),
             dailyGainPct: getVal(row, 'Daily Gain/Loss (%)')
