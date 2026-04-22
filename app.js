@@ -479,7 +479,7 @@ function processAndRender(rawData) {
     const cashValue = latest.usdtBal + latest.usdcBal;
     const stableRatio = latest.totalValue > 0 ? (cashValue / latest.totalValue) : 0;
 
-    const finalAdjustedInvested = day1.totalValue + totalInflows - totalOutflows;
+    const finalAdjustedInvested = currentCostBasis; // Use the properly calculated basis from the loop
     const overallGainAmount = latest.totalValue - finalAdjustedInvested;
     const overallGainPct = finalAdjustedInvested > 0 ? (overallGainAmount / finalAdjustedInvested) : 0;
     const cagr = Math.pow(latest.totalValue / finalAdjustedInvested, 365 / daysElapsed) - 1;
