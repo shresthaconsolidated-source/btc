@@ -304,8 +304,16 @@ function runReconciliationEngine(data) {
         let dEth = curr.ethBal - prev.ethBal;
         
         let dUsdtRaw = (curr.usdtBal + curr.usdcBal) - (prev.usdtBal + prev.usdcBal);
-        // cleanDUsdt represents change in stablecoins minus ANY fresh capital injected
-        let cleanDUsdt = dUsdtRaw - curr.inflowOther; 
+        
+        let explicitCapitalInjected = 0;
+        if (curr.totalInvestment !== undefined && prev.totalInvestment !== undefined) {
+            explicitCapitalInjected = curr.totalInvestment - prev.totalInvestment;
+        } else {
+            explicitCapitalInjected = curr.inflowOther;
+        }
+        
+        // cleanDUsdt represents change in stablecoins minus ANY explicit capital injected
+        let cleanDUsdt = dUsdtRaw - explicitCapitalInjected; 
         let usdtSpentOnTrades = 0;
 
         // BTC Reconciliation
@@ -391,6 +399,7 @@ function processAndRender(rawData) {
             inflowOther: inOther,
             inflowWodl: inWodl,
             inflow: inOther, // WODL is yield, not principal. This ensures Capital Gain is 0 when prices are flat.
+            totalInvestment: 'Total Investment (USD)' in row ? getVal(row, 'Total Investment (USD)') : undefined,
             outflow: 0,
             totalValue: getVal(row, 'Total Portfolio Value (USD)'),
             dailyGainPct: getVal(row, 'Daily Gain/Loss (%)')
@@ -412,7 +421,7 @@ function processAndRender(rawData) {
     let timeSeriesBtcSimValues = [];
     let allTimeHigh = 0;
 
-    let currentCostBasis = day1.totalValue;
+    let currentCostBasis = (day1.totalInvestment !== undefined && day1.totalInvestment > 0) ? day1.totalInvestment : day1.totalValue;
     let cumulativeSimulatedBTC = (day1.totalValue / day1.btcPrice);
 
     const OneDayMs = 24 * 60 * 60 * 1000;
@@ -425,7 +434,13 @@ function processAndRender(rawData) {
         if (i > 0) {
             totalInflows += d.inflow;
             totalOutflows += d.outflow;
-            currentCostBasis = currentCostBasis + d.inflow - d.outflow;
+            
+            if (d.totalInvestment !== undefined && d.totalInvestment > 0) {
+                currentCostBasis = d.totalInvestment;
+            } else {
+                currentCostBasis = currentCostBasis + d.inflow - d.outflow;
+            }
+            
             cumulativeSimulatedBTC += (d.inflow / d.btcPrice);
             cumulativeSimulatedBTC -= (d.outflow / d.btcPrice);
         }
