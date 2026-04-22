@@ -231,6 +231,7 @@ main.active-view { display: flex; flex-direction: column; gap: 1rem; }
 .metric-item .label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.2rem; }
 .metric-item .value { font-size: 1.2rem; font-family: var(--font-heading); font-weight: 700; }
 .highlight-positive { color: var(--positive); }
+.highlight-negative { color: var(--negative); }
 
 .milestone-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
 

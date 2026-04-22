@@ -436,9 +436,40 @@ function processAndRender(rawData) {
 function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     if (data.length < 2) return;
 
-    // 1. Logic Smoothing & Confidence
-    // If data points are few, we treat projections with lower confidence.
-    const confidenceScore = Math.min(1, data.length / 30); // 30 days for full confidence
+    const day1 = data[0];
+    const portfolioPerf = (latest.totalValue - basis) / basis;
+
+    // 1. Market Benchmark Calculation (BTC & ETH weighted 50/50 or based on initial ratio)
+    // To be fair, we use the average performance of the two primary assets from Day 1
+    const btcPerf = (latest.btcPrice - day1.btcPrice) / day1.btcPrice;
+    const ethPerf = (latest.ethPrice - day1.ethPrice) / day1.ethPrice;
+    const marketPerf = (btcPerf + ethPerf) / 2; // Simple 50/50 index
+    const alpha = portfolioPerf - marketPerf;
+
+    // Update Alpha UI
+    const marketPerfEl = document.getElementById('intel-market-perf');
+    const alphaValEl = document.getElementById('intel-alpha-value');
+    const alphaLabelEl = document.getElementById('intel-alpha-label');
+    const alphaNoteEl = document.getElementById('intel-alpha-note');
+
+    if (marketPerfEl) marketPerfEl.textContent = (marketPerf >= 0 ? '+' : '') + fPct.format(marketPerf);
+    if (alphaValEl) {
+        alphaValEl.textContent = (alpha >= 0 ? '+' : '') + fPct.format(alpha);
+        alphaValEl.className = 'value ' + (alpha >= 0 ? 'highlight-positive' : 'highlight-negative');
+    }
+    if (alphaLabelEl) alphaLabelEl.textContent = alpha >= 0 ? 'Alpha' : 'Beta Lag';
+    if (alphaNoteEl) {
+        if (alpha >= 0) {
+            alphaNoteEl.textContent = marketPerf < 0 ? 'Yield Cushioning (Defensive)' : 'Outperforming Market Index';
+            alphaNoteEl.style.color = 'var(--positive)';
+        } else {
+            alphaNoteEl.textContent = 'Underperforming Market Index';
+            alphaNoteEl.style.color = 'var(--negative)';
+        }
+    }
+
+    // 2. Logic Smoothing & Confidence
+    const confidenceScore = Math.min(1, data.length / 30); 
     document.getElementById('ml-confidence-fill').style.width = (confidenceScore * 100) + '%';
     document.getElementById('intel-avg-inflow').textContent = fCur.format(avgInflow) + ' /day';
 
