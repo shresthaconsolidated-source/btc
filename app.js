@@ -890,10 +890,15 @@ function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     }
     generateMorningBriefing(regimeData, alpha);
 
-    // 3. Scenario Logic
-    const r_worst = 0;
-    const r_mod = (data.length < 14) ? Math.min(smartCAGR, 0.20) : smartCAGR; 
-    const annStdDev = stdDev * Math.sqrt(365) || 0.5;
+    // 3. Scenario rates — Best = APR-only CAGR, Mod = 75% of it, Worst = 50% of it
+    // APR CAGR: annualize the daily yield (avgInflow / basis)
+    const dailyAprRate = basis > 0 ? (avgInflow / basis) : 0;
+    const r_best  = Math.pow(1 + dailyAprRate, 365) - 1;   // Best: pure APR compounded
+    const r_mod   = r_best * 0.75;                           // Moderate: 75% of APR CAGR
+    const r_worst = r_best * 0.50;                           // Worst: 50% of APR CAGR
+    const inflow_best  = avgInflow;
+    const inflow_mod   = avgInflow * 0.75;
+    const inflow_worst = avgInflow * 0.50;
 
     // 4. Milestone Scenarios Rendering
     const targets = [1000, 10000, 20000, 50000, 100000];
@@ -932,33 +937,16 @@ function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     targets.forEach(target => {
         if (target <= latest.totalValue) return;
 
-        const dWorst = calculateDays(target, r_worst, avgInflow, latest.totalValue);
-        const dMod = calculateDays(target, r_mod, avgInflow, latest.totalValue);
-
-        let prob = 0;
-        if (annStdDev > 0 && r_mod > -0.99) {
-            const requiredReturn = (target - (avgInflow * 365)) / latest.totalValue;
-            if (requiredReturn > 0) {
-                const lnReq = Math.log(requiredReturn);
-                const lnExpected = Math.log(1 + r_mod);
-                const z = (lnExpected - lnReq) / annStdDev;
-                prob = normalCDF(z);
-            }
-        }
-        
-        let probStr = "---";
-        if (prob > 0) {
-            if (prob > 0.99) probStr = ">99%";
-            else if (prob < 0.01) probStr = "<1%";
-            else probStr = (prob * 100).toFixed(0) + "%";
-        }
+        const dBest  = calculateDays(target, r_best,  inflow_best,  latest.totalValue);
+        const dMod   = calculateDays(target, r_mod,   inflow_mod,   latest.totalValue);
+        const dWorst = calculateDays(target, r_worst, inflow_worst, latest.totalValue);
 
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${fCur.format(target)}</td>
             <td class="col-worst">${formatDate(dWorst)}</td>
             <td class="col-mod">${formatDate(dMod)}</td>
-            <td class="col-best" style="color: var(--positive);">${probStr}</td>
+            <td class="col-best" style="color: var(--positive);">${formatDate(dBest)}</td>
         `;
         tbody.appendChild(row);
     });
