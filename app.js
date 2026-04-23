@@ -1135,7 +1135,7 @@ function renderCagrChart(type) {
     const ctx = document.getElementById('cagrHistoryChart').getContext('2d');
     if (cagrChartInstance) cagrChartInstance.destroy();
 
-    const data = window.trueLedgerData; 
+    const data = trueLedgerData; 
     if (!data || data.length === 0) return;
 
     let historyLabels = [];
