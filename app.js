@@ -138,30 +138,31 @@ function setupModals() {
         }
     });
 
-    // Submit Entry
-    document.getElementById('entry-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
+    // Submit Entry Handler
+    const submitEntry = async (actionType, btnElement) => {
         if (!WebhookUrl) {
             alert("Please configure your Webhook URL in Settings first!");
             return;
         }
 
         const payload = {
-            date: document.getElementById('input-date').value,
-            btcBal: document.getElementById('input-btc-bal').value,
-            btcPrice: document.getElementById('input-btc-price').value,
-            ethBal: document.getElementById('input-eth-bal').value,
-            ethPrice: document.getElementById('input-eth-price').value,
-            usdtBal: document.getElementById('input-usdt-bal').value,
-            usdcBal: document.getElementById('input-usdc-bal').value,
-            inflowWodl: document.getElementById('input-inflow-wodl').value,
-            inflowOther: document.getElementById('input-inflow-other').value
+            action: actionType,
+            data: {
+                date: document.getElementById('input-date').value,
+                btcBal: document.getElementById('input-btc-bal').value,
+                btcPrice: document.getElementById('input-btc-price').value,
+                ethBal: document.getElementById('input-eth-bal').value,
+                ethPrice: document.getElementById('input-eth-price').value,
+                usdtBal: document.getElementById('input-usdt-bal').value,
+                usdcBal: document.getElementById('input-usdc-bal').value,
+                inflowWodl: document.getElementById('input-inflow-wodl').value,
+                inflowOther: document.getElementById('input-inflow-other').value
+            }
         };
 
-        const btn = document.getElementById('btn-submit-entry');
-        btn.textContent = "Committing...";
-        btn.classList.add('sync-loading');
+        const originalText = btnElement.textContent;
+        btnElement.textContent = "Committing...";
+        btnElement.classList.add('sync-loading');
 
         try {
             const res = await fetch(WebhookUrl, {
@@ -170,12 +171,10 @@ function setupModals() {
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(payload)
             });
-            // no-cors implies we cannot inherently read JSON response safely, but if execution throws no network error, we assume success
             
-            // Force a resync sequence safely
             setTimeout(() => {
-                btn.textContent = "Commit Transaction";
-                btn.classList.remove('sync-loading');
+                btnElement.textContent = originalText;
+                btnElement.classList.remove('sync-loading');
                 closeAll();
                 document.getElementById('last-updated').textContent = "Pulling Cloud Sync...";
                 document.querySelector('.status-dot').classList.add('pulsing');
@@ -184,9 +183,19 @@ function setupModals() {
             
         } catch(err) {
             alert("Network Error committing payload: " + err);
-            btn.textContent = "Commit Transaction";
-            btn.classList.remove('sync-loading');
+            btnElement.textContent = originalText;
+            btnElement.classList.remove('sync-loading');
         }
+    };
+
+    document.getElementById('btn-update-entry').addEventListener('click', (e) => {
+        e.preventDefault();
+        submitEntry('update', document.getElementById('btn-update-entry'));
+    });
+
+    document.getElementById('btn-submit-entry').addEventListener('click', (e) => {
+        e.preventDefault();
+        submitEntry('append', document.getElementById('btn-submit-entry'));
     });
 }
 
