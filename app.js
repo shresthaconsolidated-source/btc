@@ -1150,8 +1150,8 @@ function renderCagrChart(type) {
         
         const daysElapsed = Math.max(1, ((day_i.dateObj - day1Date) / msPerDay) + 1);
         
-        // Skip first few days to avoid massive extreme outliers (like 10,000% annualized)
-        if (daysElapsed < 3) continue;
+        // Start plotting from Day 2 (skipping day 1 where return is inherently 0/undefined)
+        if (daysElapsed < 2) continue;
         
         const metrics = runReconciliationEngine(slice);
         
@@ -1210,8 +1210,8 @@ function renderCagrChart(type) {
                     borderColor: colorStr,
                     backgroundColor: gradient,
                     borderWidth: 2,
-                    pointRadius: 0,
-                    pointHoverRadius: 5,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
                     fill: true,
                     tension: 0.3
                 },
