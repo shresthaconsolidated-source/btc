@@ -614,6 +614,29 @@ function processAndRender(rawData) {
     if (elBtcBasis) elBtcBasis.textContent = (btcBasisAvg > 0) ? fCur.format(btcBasisAvg) : (isNaN(btcBasisAvg) ? 'Err' : '$0.00');
     if (elEthBasis) elEthBasis.textContent = (ethBasisAvg > 0) ? fCur.format(ethBasisAvg) : (isNaN(ethBasisAvg) ? 'Err' : '$0.00');
 
+    // --- CAGR from APR vs CAGR from Capital Gains ---
+    // Formula: (1 + return_fraction)^(365 / daysElapsed) - 1
+    // Time base = daysElapsed (number of days actually recorded in the sheet)
+    const cagrAprEl = document.getElementById('ai-cagr-apr');
+    const cagrCapGainsEl = document.getElementById('ai-cagr-capgains');
+
+    if (finalAdjustedInvested > 0 && daysElapsed > 1) {
+        const aprReturnFraction = pureAprValue / finalAdjustedInvested;
+        const cagrAPR = Math.pow(1 + aprReturnFraction, 365 / daysElapsed) - 1;
+
+        const cgReturnFraction = totalCapitalGains / finalAdjustedInvested;
+        const cagrCapGains = Math.pow(1 + cgReturnFraction, 365 / daysElapsed) - 1;
+
+        if (cagrAprEl) {
+            cagrAprEl.textContent = `${cagrAPR >= 0 ? '+' : ''}${fPct.format(cagrAPR)}`;
+            cagrAprEl.style.color = cagrAPR >= 0 ? 'var(--positive)' : 'var(--negative)';
+        }
+        if (cagrCapGainsEl) {
+            cagrCapGainsEl.textContent = `${cagrCapGains >= 0 ? '+' : ''}${fPct.format(cagrCapGains)}`;
+            cagrCapGainsEl.style.color = cagrCapGains >= 0 ? 'var(--positive)' : 'var(--negative)';
+        }
+    }
+
     // --- Populate secondary ticker bar ---
     const tickerVal = document.getElementById('ticker-portfolio-value');
     const tickerReturn = document.getElementById('ticker-overall-return');
