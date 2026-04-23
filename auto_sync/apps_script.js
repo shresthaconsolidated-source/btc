@@ -52,23 +52,33 @@ function doOptions(e) {
 // ── 2. Auto Price Update (Every 15 Min) ──────────────────────────────────────
 function updateLatestPrices() {
   try {
-    var btcPrice = Math.round(parseFloat(JSON.parse(
-      UrlFetchApp.fetch("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT", {muteHttpExceptions: true})
-      .getContentText()).price) * 100) / 100;
-      
-    var ethPrice = Math.round(parseFloat(JSON.parse(
-      UrlFetchApp.fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT", {muteHttpExceptions: true})
-      .getContentText()).price) * 100) / 100;
+    // We use CoinGecko instead of Binance because Binance blocks Google Servers (US IPs)
+    var url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd";
+    var response = UrlFetchApp.fetch(url, {muteHttpExceptions: true});
+    var data = JSON.parse(response.getContentText());
+    
+    var btcPrice = data.bitcoin ? data.bitcoin.usd : NaN;
+    var ethPrice = data.ethereum ? data.ethereum.usd : NaN;
 
     var ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SHEET_ID);
     var sheet = ss.getSheetByName(SHEET_TAB) || ss.getSheets()[0];
     var lastRow = sheet.getLastRow();
 
+    Logger.log("--- DEBUG INFO ---");
+    Logger.log("Sheet Name found: " + sheet.getName());
+    Logger.log("Last Row found: " + lastRow);
+    Logger.log("BTC Price: " + btcPrice);
+    Logger.log("ETH Price: " + ethPrice);
+    Logger.log("------------------");
+
     // Update column C (BTC) and E (ETH) on the last row only
-    if (lastRow > 1 && !isNaN(btcPrice) && !isNaN(ethPrice)) {
-      sheet.getRange(lastRow, 3).setValue(btcPrice); 
-      sheet.getRange(lastRow, 5).setValue(ethPrice); 
-      Logger.log("Prices updated to BTC $" + btcPrice + " | ETH $" + ethPrice);
+    if (lastRow > 0 && !isNaN(btcPrice) && !isNaN(ethPrice)) {
+      var targetRow = lastRow < 2 ? 2 : lastRow; // Ensure we don't overwrite headers if lastRow == 1
+      sheet.getRange(targetRow, 3).setValue(btcPrice); 
+      sheet.getRange(targetRow, 5).setValue(ethPrice); 
+      Logger.log("Prices updated successfully on row " + targetRow + ": BTC $" + btcPrice + " | ETH $" + ethPrice);
+    } else {
+      Logger.log("Skipped update! Condition failed (is lastRow 0? or prices NaN?)");
     }
   } catch (err) {
     Logger.log("Error: " + err.toString());
