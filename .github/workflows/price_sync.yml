@@ -1,0 +1,21 @@
+name: Price Sync (Every 15 min)
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"  # Every 15 minutes, 24/7
+  workflow_dispatch:
+
+jobs:
+  sync-prices:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r auto_sync/requirements.txt
+      - name: Sync live prices
+        env:
+          GOOGLE_SHEET_ID:             ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: python auto_sync/price_sync.py

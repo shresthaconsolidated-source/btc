@@ -1,31 +1,26 @@
-name: Daily Binance Auto-Sync
+name: Balance Sync (3x Daily)
 
 on:
   schedule:
-    # 9:00 PM Nepal time = 15:15 UTC
-    - cron: "15 15 * * *"
-  workflow_dispatch: # allow manual trigger from GitHub UI
+    - cron: "15 0 * * *"   # 6:00 AM Nepal (00:15 UTC)
+    - cron: "45 8 * * *"   # 2:30 PM Nepal (08:45 UTC)
+    - cron: "15 15 * * *"  # 9:00 PM Nepal (15:15 UTC)
+  workflow_dispatch:
 
 jobs:
-  sync:
+  sync-balances:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install -r auto_sync/requirements.txt
-
-      - name: Run sync
+      - run: pip install -r auto_sync/requirements.txt
+      - name: Sync balances
         env:
-          BINANCE_API_KEY:              ${{ secrets.BINANCE_API_KEY }}
-          BINANCE_API_SECRET:           ${{ secrets.BINANCE_API_SECRET }}
-          GOOGLE_SHEET_ID:              ${{ secrets.GOOGLE_SHEET_ID }}
-          GOOGLE_SERVICE_ACCOUNT_JSON:  ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-          SHEET_TAB:                    ${{ secrets.SHEET_TAB }}
+          BINANCE_API_KEY:             ${{ secrets.BINANCE_API_KEY }}
+          BINANCE_API_SECRET:          ${{ secrets.BINANCE_API_SECRET }}
+          GOOGLE_SHEET_ID:             ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SHEET_TAB:                   ${{ secrets.SHEET_TAB }}
         run: python auto_sync/sync.py

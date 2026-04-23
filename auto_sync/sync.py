@@ -1,22 +1,14 @@
 """
-Quantum Terminal - Daily Binance Auto-Sync
-Pulls BTC, ETH, USDT, USDC from Binance and appends a row to Google Sheet.
-Runs daily via GitHub Actions at 9 PM Nepal time (15:15 UTC).
+Quantum Terminal - Balance Sync
+Runs 3x daily: 6 AM, 2:30 PM, 9 PM Nepal time.
+Writes BTC coins, ETH coins, USDT, USDC (+ price snapshot at that moment) as a new row.
 """
 
-import os
-import hmac
-import hashlib
-import time
-import json
-import urllib.request
-import urllib.parse
+import os, hmac, hashlib, time, json, urllib.request, urllib.parse
 from datetime import datetime, timezone, timedelta
-
 import gspread
 from google.oauth2.service_account import Credentials
 
-# ── Binance ────────────────────────────────────────────────────────────────────
 BINANCE_API_KEY    = os.environ["BINANCE_API_KEY"]
 BINANCE_API_SECRET = os.environ["BINANCE_API_SECRET"]
 BINANCE_BASE       = "https://api.binance.com"
@@ -49,33 +41,27 @@ def get_balances():
         "USDC": round(balances.get("USDC", 0), 2),
     }
 
-# ── Google Sheets ──────────────────────────────────────────────────────────────
-SHEET_ID = os.environ["GOOGLE_SHEET_ID"]          # The spreadsheet ID from the URL
-SHEET_TAB = os.environ.get("SHEET_TAB", "Sheet1") # Tab name, default Sheet1
-
-def get_sheet():
-    creds_json = os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
-    creds_dict = json.loads(creds_json)
+def get_sheet(tab_name):
     creds = Credentials.from_service_account_info(
-        creds_dict,
+        json.loads(os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]),
         scopes=["https://www.googleapis.com/auth/spreadsheets"]
     )
-    client = gspread.authorize(creds)
-    return client.open_by_key(SHEET_ID).worksheet(SHEET_TAB)
+    return gspread.authorize(creds).open_by_key(
+        os.environ["GOOGLE_SHEET_ID"]
+    ).worksheet(tab_name)
 
-# ── Main ───────────────────────────────────────────────────────────────────────
 def main():
-    print("Fetching Binance data...")
+    nepal_tz  = timezone(timedelta(hours=5, minutes=45))
+    now_nepal = datetime.now(nepal_tz)
+    today_str = now_nepal.strftime("%Y-%m-%d")
+    time_str  = now_nepal.strftime("%H:%M")
+
+    print(f"[{today_str} {time_str} NPT] Fetching balances...")
     balances  = get_balances()
     btc_price = get_price("BTCUSDT")
     eth_price = get_price("ETHUSDT")
 
-    # Nepal time = UTC + 5:45
-    nepal_tz  = timezone(timedelta(hours=5, minutes=45))
-    today_str = datetime.now(nepal_tz).strftime("%Y-%m-%d")
-
-    # Row order must match your sheet columns exactly:
-    # Date | BTC Bal | BTC Price | ETH Bal | ETH Price | USDT | USDC | Inflow(WODL) | Inflow(Other)
+    # Row: Date | BTC Bal | BTC Price | ETH Bal | ETH Price | USDT | USDC | Inflow(WODL) | Inflow(Other)
     row = [
         today_str,
         balances["BTC"],
@@ -88,16 +74,13 @@ def main():
         0,   # Inflow Other — fill manually
     ]
 
-    print(f"Date:      {today_str}")
-    print(f"BTC:       {balances['BTC']} @ ${btc_price:,.2f}")
-    print(f"ETH:       {balances['ETH']} @ ${eth_price:,.2f}")
-    print(f"USDT:      ${balances['USDT']}")
-    print(f"USDC:      ${balances['USDC']}")
-    print("Appending row to Google Sheet...")
+    print(f"  BTC: {balances['BTC']} @ ${btc_price:,.2f}")
+    print(f"  ETH: {balances['ETH']} @ ${eth_price:,.2f}")
+    print(f"  USDT: ${balances['USDT']}  USDC: ${balances['USDC']}")
 
-    sheet = get_sheet()
+    sheet = get_sheet(os.environ.get("SHEET_TAB", "Sheet1"))
     sheet.append_row(row, value_input_option="USER_ENTERED")
-    print("✅ Done.")
+    print("✅ Balance row written.")
 
 if __name__ == "__main__":
     main()
