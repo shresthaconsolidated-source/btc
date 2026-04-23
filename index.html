@@ -329,12 +329,12 @@
                             </div>
                         </div>
                         <div class="metric-row" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-glass);">
-                            <div class="metric-item">
-                                <span class="label">CAGR (APR Only)</span>
+                            <div class="metric-item cagr-kpi" id="btn-cagr-apr" style="cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                                <span class="label">CAGR (APR Only) 📊</span>
                                 <span class="value-sm highlight-positive" id="ai-cagr-apr">--</span>
                             </div>
-                            <div class="metric-item">
-                                <span class="label">CAGR (Cap. Gains)</span>
+                            <div class="metric-item cagr-kpi" id="btn-cagr-capgains" style="cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                                <span class="label">CAGR (Cap. Gains) 📊</span>
                                 <span class="value-sm" id="ai-cagr-capgains">--</span>
                             </div>
                         </div>
@@ -425,6 +425,20 @@
                 <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.5rem;">Paste the Web App URL generated from your Google Script here to enable Two-Way uploading. This is saved securely to your local browser.</p>
             </div>
             <button class="btn-submit" id="btn-save-settings" style="margin-top: 1rem;">Save Setup</button>
+        </div>
+    </div>
+
+    <!-- CAGR Chart Modal -->
+    <div class="modal-panel glass" id="cagr-chart-modal">
+        <div class="modal-header">
+            <h2 id="cagr-chart-title">Historical CAGR</h2>
+            <button class="btn-close" id="close-cagr-chart">✕</button>
+        </div>
+        <div class="modal-body" style="padding: 1rem;">
+            <p class="text-muted" style="margin-bottom: 1rem; font-size: 0.85rem;" id="cagr-chart-subtitle">Day-by-day evolution of your Compound Annual Growth Rate.</p>
+            <div class="chart-canvas-container" style="height: 300px; width: 100%;">
+                <canvas id="cagrHistoryChart"></canvas>
+            </div>
         </div>
     </div>
 

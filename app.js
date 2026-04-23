@@ -4,6 +4,7 @@ let perfChartInstance = null;
 let priceChartInstance = null;
 let holdingsChartInstance = null;
 let allocChartInstance = null;
+let cagrChartInstance = null;
 
 
 let trueLedgerData = [];
@@ -116,16 +117,36 @@ function setupModals() {
         settingsModal.style.right = '0'; // Center trick in CSS
     });
 
+    const cagrModal = document.getElementById('cagr-chart-modal');
+
     // Close Modals
     const closeAll = () => {
         backdrop.classList.remove('active');
         entryModal.classList.remove('active');
         settingsModal.classList.remove('active');
+        if (cagrModal) cagrModal.classList.remove('active');
     };
     
     document.getElementById('close-entry').addEventListener('click', closeAll);
     document.getElementById('close-settings').addEventListener('click', closeAll);
+    const closeCagrChart = document.getElementById('close-cagr-chart');
+    if(closeCagrChart) closeCagrChart.addEventListener('click', closeAll);
     backdrop.addEventListener('click', closeAll);
+
+    // CAGR Chart Triggers
+    document.getElementById('btn-cagr-apr').addEventListener('click', () => {
+        document.getElementById('cagr-chart-title').textContent = "Historical CAGR (APR Only)";
+        backdrop.classList.add('active');
+        cagrModal.classList.add('active');
+        renderCagrChart('apr');
+    });
+
+    document.getElementById('btn-cagr-capgains').addEventListener('click', () => {
+        document.getElementById('cagr-chart-title').textContent = "Historical CAGR (Cap. Gains)";
+        backdrop.classList.add('active');
+        cagrModal.classList.add('active');
+        renderCagrChart('capgains');
+    });
 
     // Save Settings
     document.getElementById('btn-save-settings').addEventListener('click', () => {
@@ -1107,5 +1128,112 @@ function renderLedgerTable(dataList) {
             <td class="${row.inflow > 0 ? 'cell-positive' : 'cell-zero'}">${row.inflow > 0 ? '+' + fCur.format(row.inflow) : '-'}</td>
         `;
         tbody.appendChild(tr);
+    });
+}
+
+function renderCagrChart(type) {
+    const ctx = document.getElementById('cagrHistoryChart').getContext('2d');
+    if (cagrChartInstance) cagrChartInstance.destroy();
+
+    const data = window.trueLedgerData; 
+    if (!data || data.length === 0) return;
+
+    let historyLabels = [];
+    let chartData = [];
+    
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const day1Date = data[0].dateObj;
+
+    for (let i = 0; i < data.length; i++) {
+        const slice = data.slice(0, i + 1);
+        const day_i = slice[slice.length - 1];
+        
+        const daysElapsed = Math.max(1, ((day_i.dateObj - day1Date) / msPerDay) + 1);
+        
+        // Skip first few days to avoid massive extreme outliers (like 10,000% annualized)
+        if (daysElapsed < 3) continue;
+        
+        const metrics = runReconciliationEngine(slice);
+        
+        let basis = (data[0].totalInvestment > 0) ? data[0].totalInvestment : data[0].totalValue;
+        for (let j = 1; j <= i; j++) {
+            if (data[j].totalInvestment > 0) basis = data[j].totalInvestment;
+            else basis = basis + data[j].inflow - data[j].outflow;
+        }
+
+        const pureAprValue = (metrics.totalBtcYield * day_i.btcPrice) + 
+                             (metrics.totalEthYield * day_i.ethPrice) + 
+                             metrics.totalUsdtYield;
+
+        const overallGain = day_i.totalValue - basis;
+        const capGainsValue = overallGain - pureAprValue;
+
+        if (basis <= 0) continue;
+
+        let valToPush = 0;
+        if (type === 'apr') {
+            const aprReturnFraction = pureAprValue / basis;
+            valToPush = (Math.pow(1 + aprReturnFraction, 365 / daysElapsed) - 1) * 100;
+        } else {
+            const cgReturnFraction = capGainsValue / basis;
+            const base = 1 + cgReturnFraction;
+            if (base <= 0) valToPush = -100;
+            else valToPush = (Math.pow(base, 365 / daysElapsed) - 1) * 100;
+        }
+
+        // Clip the visual extremes just in case early days still spike
+        if (valToPush > 500) valToPush = 500;
+        if (valToPush < -200) valToPush = -200;
+
+        historyLabels.push(day_i.dateStr);
+        chartData.push(valToPush);
+    }
+
+    const colorStr = type === 'apr' ? '#8b5cf6' : '#10b981'; // Purple vs Green
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, type === 'apr' ? 'rgba(139, 92, 246, 0.4)' : 'rgba(16, 185, 129, 0.4)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    // Add final current CAGR as a horizontal dotted line using chartjs-plugin-annotation or drawing it? 
+    // Wait, since we don't have chartjs-plugin-annotation, we can just push an array of identical values for the benchmark line!
+    const finalVal = chartData.length > 0 ? chartData[chartData.length - 1] : 0;
+    const benchmarkData = chartData.map(() => finalVal);
+
+    cagrChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: historyLabels,
+            datasets: [
+                {
+                    label: type === 'apr' ? 'APR CAGR %' : 'Cap Gains CAGR %',
+                    data: chartData,
+                    borderColor: colorStr,
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Current ' + (type === 'apr' ? 'APR' : 'Cap Gains') + ' CAGR',
+                    data: benchmarkData,
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '%' } } },
+            scales: {
+                x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MMM d' } }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { maxTicksLimit: 7 } },
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { callback: v => v + '%' } }
+            }
+        }
     });
 }
