@@ -1173,17 +1173,11 @@ function renderCagrChart(type) {
         let valToPush = 0;
         if (type === 'apr') {
             const aprReturnFraction = pureAprValue / basis;
-            valToPush = (Math.pow(1 + aprReturnFraction, 365 / daysElapsed) - 1) * 100;
+            valToPush = (aprReturnFraction / daysElapsed) * 365 * 100;
         } else {
             const cgReturnFraction = capGainsValue / basis;
-            const base = 1 + cgReturnFraction;
-            if (base <= 0) valToPush = -100;
-            else valToPush = (Math.pow(base, 365 / daysElapsed) - 1) * 100;
+            valToPush = (cgReturnFraction / daysElapsed) * 365 * 100;
         }
-
-        // Clip the visual extremes just in case early days still spike
-        if (valToPush > 500) valToPush = 500;
-        if (valToPush < -200) valToPush = -200;
 
         historyLabels.push(day_i.dateStr);
         chartData.push(valToPush);
@@ -1232,7 +1226,7 @@ function renderCagrChart(type) {
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '%' } } },
             scales: {
                 x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MMM d' } }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { maxTicksLimit: 7 } },
-                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { callback: v => v + '%' } }
+                y: { suggestedMin: -10, suggestedMax: 50, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { callback: v => v + '%' } }
             }
         }
     });
