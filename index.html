@@ -259,6 +259,35 @@
                                 <span class="value" id="intel-apr-gap">--</span>
                             </div>
                         </div>
+                        <!-- Risk Engine embedded -->
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-glass);">
+                            <div class="header-with-badge" style="margin-bottom: 0.75rem;">
+                                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Risk Engine</span>
+                                <span class="badge-ml" style="background: #7c3aed;">QUANT</span>
+                            </div>
+                            <div class="metric-row" style="margin-bottom: 0.75rem;">
+                                <div class="metric-item">
+                                    <span class="label">BTC Sensitivity</span>
+                                    <span class="value-sm" style="color: #f7931a;" id="risk-btc-sensitivity">--</span>
+                                    <span class="label" style="margin-top:0.15rem;">per 10% move</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="label">ETH Sensitivity</span>
+                                    <span class="value-sm" style="color: #627eea;" id="risk-eth-sensitivity">--</span>
+                                    <span class="label" style="margin-top:0.15rem;">per 10% move</span>
+                                </div>
+                            </div>
+                            <div class="metric-row">
+                                <div class="metric-item">
+                                    <span class="label">BTC Break-Even</span>
+                                    <span class="value-sm" style="color: #f7931a;" id="risk-btc-breakeven">--</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="label">ETH Break-Even</span>
+                                    <span class="value-sm" style="color: #627eea;" id="risk-eth-breakeven">--</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="analysis-card glass">
@@ -311,35 +340,6 @@
                         </div>
                     </div>
 
-                    <!-- Risk Engine Card -->
-                    <div class="analysis-card glass risk-engine-card">
-                        <div class="header-with-badge">
-                            <h3>Risk Engine</h3>
-                            <span class="badge-ml" style="background: #7c3aed;">QUANT</span>
-                        </div>
-                        <p class="text-muted" style="font-size:0.7rem; margin: 0.5rem 0 1rem; line-height:1.4;">Portfolio sensitivity and break-even analysis.</p>
-                        <div class="metric-row" style="margin-bottom: 1rem;">
-                            <div class="metric-item">
-                                <span class="label">BTC Sensitivity</span>
-                                <span class="value-sm" style="color: #f7931a;" id="risk-btc-sensitivity">--</span>
-                                <span class="label" style="margin-top:0.2rem;">per 10% BTC move</span>
-                            </div>
-                            <div class="metric-item">
-                                <span class="label">ETH Sensitivity</span>
-                                <span class="value-sm" style="color: #627eea;" id="risk-eth-sensitivity">--</span>
-                                <span class="label" style="margin-top:0.2rem;">per 10% ETH move</span>
-                            </div>
-                        </div>
-                        <div class="metric-row">
-                            <div class="metric-item">
-                                <span class="label">BTC Break-Even</span>
-                                <span class="value-sm" style="color: #f7931a;" id="risk-btc-breakeven">--</span>
-                            </div>
-                            <div class="metric-item">
-                                <span class="label">ETH Break-Even</span>
-                                <span class="value-sm" style="color: #627eea;" id="risk-eth-breakeven">--</span>
-                            </div>
-                        </div>
                     </div>
                 </div>
 

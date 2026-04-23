@@ -988,8 +988,8 @@ function renderHoldingsChart(data) {
         data: {
             labels: labels,
             datasets: [
-                { label: 'BTC Stack', data: btcHoldings, borderColor: '#f7931a', backgroundColor: 'rgba(247, 147, 26, 0.1)', borderWidth: 2, fill: true, tension: 0.1, yAxisID: 'y' },
-                { label: 'ETH Stack', data: ethHoldings, borderColor: '#627eea', backgroundColor: 'rgba(98, 126, 234, 0.1)', borderWidth: 2, fill: true, tension: 0.1, yAxisID: 'y1' }
+                { label: 'BTC Stack', data: btcHoldings, borderColor: '#f7931a', backgroundColor: 'rgba(247, 147, 26, 0.1)', borderWidth: 2, fill: true, tension: 0.3, yAxisID: 'y' },
+                { label: 'ETH Stack', data: ethHoldings, borderColor: '#627eea', backgroundColor: 'rgba(98, 126, 234, 0.1)', borderWidth: 2, fill: true, tension: 0.3, yAxisID: 'y1' }
             ]
         },
         options: {
@@ -998,8 +998,8 @@ function renderHoldingsChart(data) {
             plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
             scales: {
                 x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MMM d' } }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'BTC Qty', font: { size: 10 } } },
-                y1: { type: 'linear', display: true, position: 'right', grid: { display: false }, title: { display: true, text: 'ETH Qty', font: { size: 10 } } }
+                y: { type: 'linear', display: true, position: 'left', beginAtZero: false, grid: { color: 'rgba(255,255,255,0.03)' }, title: { display: true, text: 'BTC Qty', font: { size: 10 } } },
+                y1: { type: 'linear', display: true, position: 'right', beginAtZero: false, grid: { display: false }, title: { display: true, text: 'ETH Qty', font: { size: 10 } } }
             }
         }
     });
@@ -1026,11 +1026,11 @@ function renderPriceHistoryChart(data) {
         options: {
             responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { display: false } },
+            plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10 }, color: '#94a3b8' } } },
             scales: {
                 x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MMM d' } }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                y: { type: 'linear', display: true, position: 'left', grid: { color: 'rgba(255,255,255,0.03)' }, title: { display: true, text: 'BTC ($)', font: { size: 10 } } },
-                y1: { type: 'linear', display: true, position: 'right', grid: { display: false }, title: { display: true, text: 'ETH ($)', font: { size: 10 } } }
+                y: { type: 'linear', display: true, position: 'left', beginAtZero: false, grid: { color: 'rgba(255,255,255,0.03)' }, title: { display: true, text: 'BTC ($)', font: { size: 10 } } },
+                y1: { type: 'linear', display: true, position: 'right', beginAtZero: false, grid: { display: false }, title: { display: true, text: 'ETH ($)', font: { size: 10 } } }
             }
         }
     });
