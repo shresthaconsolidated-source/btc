@@ -1,9 +1,9 @@
-const CACHE_NAME = 'quantum-v4';
+const CACHE_NAME = 'quantum-v5';
 const ASSETS = [
   './',
   './index.html',
-  './style.css?v=3.0',
-  './app.js?v=3.0',
+  './style.css?v=3.1',
+  './app.js?v=3.1',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js'
 ];
