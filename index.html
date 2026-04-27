@@ -393,13 +393,13 @@
                 <div class="analysis-grid" style="margin-top: 1rem;">
                     <!-- LEFT: Charts -->
                     <div class="chart-container glass" style="display: flex; flex-direction: column; gap: 1.5rem;">
-                        <div style="flex: 1; display: flex; flex-direction: column; min-height: 250px;">
+                        <div style="flex: 1; display: flex; flex-direction: column; min-height: 180px;">
                             <div class="section-header"><h2>Cumulative Trajectory vs Goal</h2></div>
                             <div class="chart-canvas-container" style="flex: 1;">
                                 <canvas id="honeyChart"></canvas>
                             </div>
                         </div>
-                        <div style="flex: 1; display: flex; flex-direction: column; min-height: 200px;">
+                        <div style="flex: 1; display: flex; flex-direction: column; min-height: 150px;">
                             <div class="section-header"><h2>Daily Velocity (Accumulation)</h2></div>
                             <div class="chart-canvas-container" style="flex: 1;">
                                 <canvas id="honeyVelocityChart"></canvas>
@@ -408,10 +408,10 @@
                     </div>
 
                     <!-- RIGHT: Deep Dives -->
-                    <div class="analysis-sidebar">
+                    <div class="analysis-sidebar" style="overflow-y: auto; padding-right: 4px;">
                         <div class="analysis-card glass">
                             <div class="section-header"><h2>Revenue Mix</h2></div>
-                            <div class="chart-canvas-container" style="height: 180px;">
+                            <div class="chart-canvas-container" style="height: 150px;">
                                 <canvas id="honeyMixChart"></canvas>
                             </div>
                             <div id="honey-mix-legend" style="margin-top: 1rem; display: flex; justify-content: space-around; font-size: 0.8rem;"></div>
