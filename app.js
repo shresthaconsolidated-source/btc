@@ -1,13 +1,16 @@
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4keJuJi6W2iD_uSE1tRXRWPyJXQ5oe7KOHys1pI5sHBMjjk2HRzCIK9xsK1kgR7fIZqDejXRotfjd/pub?output=csv";
+const HONEY_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4keJuJi6W2iD_uSE1tRXRWPyJXQ5oe7KOHys1pI5sHBMjjk2HRzCIK9xsK1kgR7fIZqDejXRotfjd/pub?gid=309138621&single=true&output=csv";
 
 let perfChartInstance = null;
 let priceChartInstance = null;
 let holdingsChartInstance = null;
 let allocChartInstance = null;
 let cagrChartInstance = null;
+let honeyChartInstance = null;
 
 
 let trueLedgerData = [];
+let trueHoneyData = [];
 let WebhookUrl = localStorage.getItem('quantum_webhook') || 'https://script.google.com/macros/s/AKfycbxs3lwwOiuv4usHKg7cEwqnTXjumgkVsY7eFKpgcv653OboaV8ABLUn3k-4qpCas1J6YQ/exec';
 
 const fCur = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -40,10 +43,25 @@ async function initApp() {
     simulateAIThinking();
     try {
         // Appending a timestamp forces Google's cache to bust slightly faster
-        const response = await fetch(CSV_URL + '&t=' + new Date().getTime());
-        const csvText = await response.text();
+        const ts = new Date().getTime();
         
-        Papa.parse(csvText, {
+        const [mainRes, honeyRes] = await Promise.all([
+            fetch(CSV_URL + '&t=' + ts),
+            fetch(HONEY_CSV_URL + '&t=' + ts)
+        ]);
+        
+        const mainText = await mainRes.text();
+        const honeyText = await honeyRes.text();
+        
+        Papa.parse(honeyText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                processAndRenderHoney(results.data);
+            }
+        });
+
+        Papa.parse(mainText, {
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
@@ -1227,6 +1245,140 @@ function renderCagrChart(type) {
             scales: {
                 x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MMM d' } }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { maxTicksLimit: 7 } },
                 y: { suggestedMin: -10, suggestedMax: 50, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { callback: v => v + '%' } }
+            }
+        }
+    });
+}
+
+// ==========================================
+// HoneyTracker Engine
+// ==========================================
+
+function processAndRenderHoney(rawData) {
+    if (!rawData || rawData.length === 0) return;
+
+    trueHoneyData = rawData.map(row => {
+        return {
+            dateStr: row['Date'] || Object.values(row)[0],
+            dateObj: new Date(row['Date'] || Object.values(row)[0]),
+            earning: getVal(row, 'Earning'),
+            winning: getVal(row, 'Winning')
+        };
+    }).filter(d => !isNaN(d.dateObj.getTime())).sort((a, b) => a.dateObj - b.dateObj);
+
+    if (trueHoneyData.length === 0) return;
+
+    let totalEarnings = 0;
+    let totalWinnings = 0;
+    
+    let timeSeriesDates = [];
+    let timeSeriesCumulative = [];
+    let cumulative = 0;
+
+    const TARGET = 16000;
+
+    for (let i = 0; i < trueHoneyData.length; i++) {
+        const d = trueHoneyData[i];
+        totalEarnings += d.earning;
+        totalWinnings += d.winning;
+        cumulative += (d.earning + d.winning);
+
+        timeSeriesDates.push(d.dateStr);
+        timeSeriesCumulative.push(cumulative);
+    }
+
+    const totalCredits = totalEarnings + totalWinnings;
+    const daysElapsed = trueHoneyData.length;
+    const remaining = TARGET - totalCredits;
+    const dailyAvg = totalCredits / daysElapsed;
+    const earnAvg = totalEarnings / daysElapsed;
+    const winAvg = totalWinnings / daysElapsed;
+
+    const daysToGoal = dailyAvg > 0 ? (remaining / dailyAvg) : 0;
+    
+    let etaDate = 'N/A';
+    if (daysToGoal > 0 && isFinite(daysToGoal)) {
+        const lastDate = new Date(trueHoneyData[trueHoneyData.length - 1].dateObj);
+        lastDate.setDate(lastDate.getDate() + Math.ceil(daysToGoal));
+        etaDate = lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    // Convert to USD equivalent
+    const currentUsdValue = totalCredits / 1000;
+
+    // Render Metrics
+    document.getElementById('honey-total-credits').textContent = fNum.format(totalCredits);
+    document.getElementById('honey-total-usd').textContent = `Current Value: ${fCur.format(currentUsdValue)}`;
+    document.getElementById('honey-remaining').textContent = fNum.format(Math.max(0, remaining));
+    
+    document.getElementById('honey-daily-avg').textContent = dailyAvg.toFixed(2) + ' /day';
+    document.getElementById('honey-avg-breakdown').textContent = `Earn: ${earnAvg.toFixed(2)} | Win: ${winAvg.toFixed(2)}`;
+
+    document.getElementById('honey-eta-date').textContent = remaining <= 0 ? 'GOAL MET' : etaDate;
+    document.getElementById('honey-eta-days').textContent = remaining <= 0 ? '0 Days' : `~${Math.ceil(daysToGoal)} Days left`;
+
+    renderHoneyChart(timeSeriesDates, timeSeriesCumulative, TARGET);
+}
+
+function renderHoneyChart(labels, cumulativeData, targetLine) {
+    const ctx = document.getElementById('honeyChart').getContext('2d');
+    if (honeyChartInstance) honeyChartInstance.destroy();
+
+    const targetData = labels.map(() => targetLine);
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(245, 158, 11, 0.4)'); // amber-500
+    gradient.addColorStop(1, 'rgba(245, 158, 11, 0.01)');
+
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = "'Outfit', sans-serif";
+
+    honeyChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Cumulative Credits',
+                    data: cumulativeData,
+                    borderColor: '#f59e0b',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Goal (16,000)',
+                    data: targetData,
+                    borderColor: 'rgba(16, 185, 129, 0.8)', // emerald
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleColor: '#fff', padding: 8 }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day', displayFormats: { day: 'MMM d' } },
+                    grid: { color: 'rgba(255,255,255,0.03)' },
+                    ticks: { maxTicksLimit: 7 }
+                },
+                y: {
+                    suggestedMax: targetLine * 1.1,
+                    grid: { color: 'rgba(255,255,255,0.03)' }
+                }
             }
         }
     });
