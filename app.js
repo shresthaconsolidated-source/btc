@@ -1369,6 +1369,52 @@ function processAndRenderHoney(rawData) {
     renderHoneyChart(timeSeriesDates, timeSeriesCumulative, TARGET);
     renderHoneyVelocityChart(timeSeriesDates, dailyEarningSeries, dailyWinningSeries, avg7Day);
     renderHoneyMixChart(totalEarnings, totalWinnings);
+
+    // Historical ETA Drift Calculation
+    let rollingCumulative = 0;
+    let etas = [];
+    for (let i = 0; i < trueHoneyData.length; i++) {
+        rollingCumulative += (trueHoneyData[i].earning + trueHoneyData[i].winning);
+        const daysElapsed_i = i + 1;
+        const dailyAvg_i = rollingCumulative / daysElapsed_i;
+        const remaining_i = TARGET - rollingCumulative;
+        
+        if (remaining_i > 0 && dailyAvg_i > 0) {
+            const days_i = remaining_i / dailyAvg_i;
+            const baseDate = new Date(trueHoneyData[i].dateObj);
+            baseDate.setDate(baseDate.getDate() + Math.ceil(days_i));
+            etas.push(baseDate);
+        } else if (remaining_i <= 0) {
+            etas.push('GOAL MET');
+        }
+    }
+
+    if (etas.length > 0) {
+        const todayEta = etas[etas.length - 1];
+        const yesterdayEta = etas.length > 1 ? etas[etas.length - 2] : null;
+        
+        // Filter out 'GOAL MET' for min/max comparison
+        const validDates = etas.filter(e => e instanceof Date);
+        
+        let earliestEta = validDates.length > 0 ? validDates[0] : null;
+        let latestEta = validDates.length > 0 ? validDates[0] : null;
+        
+        for (let e of validDates) {
+            if (e < earliestEta) earliestEta = e;
+            if (e > latestEta) latestEta = e;
+        }
+
+        const fmt = d => {
+            if (d === 'GOAL MET') return 'GOAL MET';
+            if (!d) return '--';
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        };
+
+        document.getElementById('hist-eta-today').textContent = fmt(todayEta);
+        document.getElementById('hist-eta-yesterday').textContent = fmt(yesterdayEta);
+        document.getElementById('hist-eta-earliest').textContent = fmt(earliestEta);
+        document.getElementById('hist-eta-latest').textContent = fmt(latestEta);
+    }
 }
 
 let honeyVelocityChartInstance = null;
