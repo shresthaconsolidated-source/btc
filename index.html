@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3.1">
+    <link rel="stylesheet" href="style.css?v=3.2">
 </head>
 <body>
     <div class="terminal-container">
@@ -369,31 +369,81 @@
                 
                 <section class="kpi-grid expanded-grid">
                     <div class="kpi-card glass">
-                        <div class="kpi-header"><span class="kpi-title">Total Credits</span></div>
+                        <div class="kpi-header"><span class="kpi-title">Gross Yield</span></div>
                         <div class="kpi-value highlight-active" id="honey-total-credits" style="color: #f59e0b;">---</div>
-                        <div class="kpi-footer"><span class="kpi-trend" id="honey-total-usd">---</span></div>
+                        <div class="kpi-footer"><span class="kpi-trend" id="honey-total-usd" style="color: var(--text-secondary);">---</span></div>
                     </div>
                     <div class="kpi-card glass">
-                        <div class="kpi-header"><span class="kpi-title">Credits Remaining</span></div>
-                        <div class="kpi-value text-gradient" id="honey-remaining">---</div>
-                        <div class="kpi-footer"><span class="text-muted">to reach 16,000</span></div>
+                        <div class="kpi-header"><span class="kpi-title">Run Rate (Overall)</span></div>
+                        <div class="kpi-value text-gradient" id="honey-daily-avg">---</div>
+                        <div class="kpi-footer"><span class="text-muted" id="honey-avg-usd">---</span></div>
                     </div>
                     <div class="kpi-card glass">
-                        <div class="kpi-header"><span class="kpi-title">Daily Avg (Overall)</span></div>
-                        <div class="kpi-value" id="honey-daily-avg">---</div>
-                        <div class="kpi-footer"><span class="text-muted" id="honey-avg-breakdown">Earn: --- | Win: ---</span></div>
+                        <div class="kpi-header"><span class="kpi-title">7-Day Momentum</span></div>
+                        <div class="kpi-value" id="honey-7d-avg">---</div>
+                        <div class="kpi-footer"><span class="badge-solid" id="honey-momentum-badge">---</span></div>
                     </div>
                     <div class="kpi-card glass" id="honey-eta-card" style="border-left: 3px solid var(--accent-blue);">
-                        <div class="kpi-header"><span class="kpi-title">Est. Target Date</span></div>
+                        <div class="kpi-header"><span class="kpi-title">Base Target Date</span></div>
                         <div class="kpi-value highlight-positive" id="honey-eta-date">---</div>
-                        <div class="kpi-footer"><span class="kpi-trend badge-solid" id="honey-eta-days">--- Days</span></div>
+                        <div class="kpi-footer"><span class="kpi-trend text-muted" id="honey-eta-days">--- Days left</span></div>
                     </div>
                 </section>
 
-                <div class="chart-container glass performance-chart-wrapper" style="margin-top: 1.5rem;">
-                    <div class="section-header"><h2>Cumulative Trajectory vs Goal</h2></div>
-                    <div class="chart-canvas-container" style="height: 350px; min-height: 350px;">
-                        <canvas id="honeyChart"></canvas>
+                <div class="analysis-grid" style="margin-top: 1rem;">
+                    <!-- LEFT: Charts -->
+                    <div class="chart-container glass" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <div style="flex: 1; display: flex; flex-direction: column; min-height: 250px;">
+                            <div class="section-header"><h2>Cumulative Trajectory vs Goal</h2></div>
+                            <div class="chart-canvas-container" style="flex: 1;">
+                                <canvas id="honeyChart"></canvas>
+                            </div>
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; min-height: 200px;">
+                            <div class="section-header"><h2>Daily Velocity (Accumulation)</h2></div>
+                            <div class="chart-canvas-container" style="flex: 1;">
+                                <canvas id="honeyVelocityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: Deep Dives -->
+                    <div class="analysis-sidebar">
+                        <div class="analysis-card glass">
+                            <div class="section-header"><h2>Revenue Mix</h2></div>
+                            <div class="chart-canvas-container" style="height: 180px;">
+                                <canvas id="honeyMixChart"></canvas>
+                            </div>
+                            <div id="honey-mix-legend" style="margin-top: 1rem; display: flex; justify-content: space-around; font-size: 0.8rem;"></div>
+                        </div>
+
+                        <div class="analysis-card glass">
+                            <div class="section-header"><h2>ETA Scenario Modeling</h2></div>
+                            <div class="scenario-table-container">
+                                <table class="scenario-table">
+                                    <thead>
+                                        <tr><th>Scenario</th><th>Run Rate</th><th>Target Date</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="col-best">Best Case</td>
+                                            <td id="eta-best-rate" class="col-best">--</td>
+                                            <td id="eta-best-date" class="col-best">--</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="col-mod">Base Case</td>
+                                            <td id="eta-base-rate" class="col-mod">--</td>
+                                            <td id="eta-base-date" class="col-mod">--</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="col-worst">Worst Case</td>
+                                            <td id="eta-worst-rate" class="col-worst">--</td>
+                                            <td id="eta-worst-date" class="col-worst">--</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -485,7 +535,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=3.1"></script>
+    <script src="app.js?v=3.2"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });

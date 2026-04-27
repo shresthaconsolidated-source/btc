@@ -1273,6 +1273,8 @@ function processAndRenderHoney(rawData) {
     
     let timeSeriesDates = [];
     let timeSeriesCumulative = [];
+    let dailyEarningSeries = [];
+    let dailyWinningSeries = [];
     let cumulative = 0;
 
     const TARGET = 16000;
@@ -1283,42 +1285,94 @@ function processAndRenderHoney(rawData) {
         totalWinnings += d.winning;
         cumulative += (d.earning + d.winning);
 
-        timeSeriesDates.push(d.dateStr);
+        timeSeriesDates.push(d.dateObj.toISOString()); // FIX: Use ISO string for ChartJS date parsing
         timeSeriesCumulative.push(cumulative);
+        dailyEarningSeries.push(d.earning);
+        dailyWinningSeries.push(d.winning);
     }
 
     const totalCredits = totalEarnings + totalWinnings;
     const daysElapsed = trueHoneyData.length;
     const remaining = TARGET - totalCredits;
     const dailyAvg = totalCredits / daysElapsed;
-    const earnAvg = totalEarnings / daysElapsed;
-    const winAvg = totalWinnings / daysElapsed;
 
-    const daysToGoal = dailyAvg > 0 ? (remaining / dailyAvg) : 0;
-    
-    let etaDate = 'N/A';
-    if (daysToGoal > 0 && isFinite(daysToGoal)) {
-        const lastDate = new Date(trueHoneyData[trueHoneyData.length - 1].dateObj);
-        lastDate.setDate(lastDate.getDate() + Math.ceil(daysToGoal));
-        etaDate = lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    // 7-day calculations
+    let last7DaysEarn = 0;
+    let last7DaysWin = 0;
+    const daysToLookBack = Math.min(7, trueHoneyData.length);
+    for (let i = trueHoneyData.length - daysToLookBack; i < trueHoneyData.length; i++) {
+        last7DaysEarn += trueHoneyData[i].earning;
+        last7DaysWin += trueHoneyData[i].winning;
     }
+    const total7DayCredits = last7DaysEarn + last7DaysWin;
+    const avg7Day = total7DayCredits / daysToLookBack;
+
+    // Scenario Modeling
+    const baseRate = dailyAvg;
+    const bestRate = Math.max(avg7Day, dailyAvg * 1.25); // Best case is recent trend or 25% bump
+    const worstRate = Math.min(avg7Day, dailyAvg * 0.75); // Worst case is recent slow trend or 25% drop
+
+    function calcEta(rate) {
+        if (remaining <= 0) return { date: 'GOAL MET', days: 0 };
+        if (rate <= 0) return { date: 'N/A', days: 0 };
+        const days = remaining / rate;
+        const lastDate = new Date(trueHoneyData[trueHoneyData.length - 1].dateObj);
+        lastDate.setDate(lastDate.getDate() + Math.ceil(days));
+        return {
+            date: lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            days: Math.ceil(days)
+        };
+    }
+
+    const baseEta = calcEta(baseRate);
+    const bestEta = calcEta(bestRate);
+    const worstEta = calcEta(worstRate);
 
     // Convert to USD equivalent
     const currentUsdValue = totalCredits / 1000;
+    const avgUsdValue = dailyAvg / 1000;
 
-    // Render Metrics
+    // Render Top KPIs
     document.getElementById('honey-total-credits').textContent = fNum.format(totalCredits);
-    document.getElementById('honey-total-usd').textContent = `Current Value: ${fCur.format(currentUsdValue)}`;
-    document.getElementById('honey-remaining').textContent = fNum.format(Math.max(0, remaining));
+    document.getElementById('honey-total-usd').textContent = `Equivalent: ${fCur.format(currentUsdValue)}`;
     
     document.getElementById('honey-daily-avg').textContent = dailyAvg.toFixed(2) + ' /day';
-    document.getElementById('honey-avg-breakdown').textContent = `Earn: ${earnAvg.toFixed(2)} | Win: ${winAvg.toFixed(2)}`;
+    document.getElementById('honey-avg-usd').textContent = `${fCur.format(avgUsdValue)} /day`;
+    
+    document.getElementById('honey-7d-avg').textContent = avg7Day.toFixed(2) + ' /day';
+    
+    const momentumBadge = document.getElementById('honey-momentum-badge');
+    const momentumDiff = avg7Day - dailyAvg;
+    if (momentumDiff > 0) {
+        momentumBadge.textContent = 'ACCELERATING';
+        momentumBadge.className = 'badge-solid trend-up';
+    } else if (momentumDiff < 0) {
+        momentumBadge.textContent = 'SLOWING';
+        momentumBadge.className = 'badge-solid trend-down';
+    } else {
+        momentumBadge.textContent = 'STABLE';
+        momentumBadge.className = 'badge-solid trend-flat';
+    }
 
-    document.getElementById('honey-eta-date').textContent = remaining <= 0 ? 'GOAL MET' : etaDate;
-    document.getElementById('honey-eta-days').textContent = remaining <= 0 ? '0 Days' : `~${Math.ceil(daysToGoal)} Days left`;
+    document.getElementById('honey-eta-date').textContent = baseEta.date;
+    document.getElementById('honey-eta-days').textContent = baseEta.days > 0 ? `~${baseEta.days} Days left` : '0 Days';
 
+    // Render Scenario Table
+    document.getElementById('eta-best-rate').textContent = bestRate.toFixed(1) + ' /day';
+    document.getElementById('eta-best-date').textContent = bestEta.date;
+    document.getElementById('eta-base-rate').textContent = baseRate.toFixed(1) + ' /day';
+    document.getElementById('eta-base-date').textContent = baseEta.date;
+    document.getElementById('eta-worst-rate').textContent = worstRate.toFixed(1) + ' /day';
+    document.getElementById('eta-worst-date').textContent = worstEta.date;
+
+    // Render Charts
     renderHoneyChart(timeSeriesDates, timeSeriesCumulative, TARGET);
+    renderHoneyVelocityChart(timeSeriesDates, dailyEarningSeries, dailyWinningSeries, avg7Day);
+    renderHoneyMixChart(totalEarnings, totalWinnings);
 }
+
+let honeyVelocityChartInstance = null;
+let honeyMixChartInstance = null;
 
 function renderHoneyChart(labels, cumulativeData, targetLine) {
     const ctx = document.getElementById('honeyChart').getContext('2d');
@@ -1327,7 +1381,7 @@ function renderHoneyChart(labels, cumulativeData, targetLine) {
     const targetData = labels.map(() => targetLine);
 
     const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(245, 158, 11, 0.4)'); // amber-500
+    gradient.addColorStop(0, 'rgba(245, 158, 11, 0.4)');
     gradient.addColorStop(1, 'rgba(245, 158, 11, 0.01)');
 
     Chart.defaults.color = '#94a3b8';
@@ -1352,7 +1406,7 @@ function renderHoneyChart(labels, cumulativeData, targetLine) {
                 {
                     label: 'Goal (16,000)',
                     data: targetData,
-                    borderColor: 'rgba(16, 185, 129, 0.8)', // emerald
+                    borderColor: 'rgba(16, 185, 129, 0.8)',
                     borderWidth: 2,
                     borderDash: [5, 5],
                     pointRadius: 0,
@@ -1382,4 +1436,105 @@ function renderHoneyChart(labels, cumulativeData, targetLine) {
             }
         }
     });
+}
+
+function renderHoneyVelocityChart(labels, earnData, winData, avg7Day) {
+    const ctx = document.getElementById('honeyVelocityChart').getContext('2d');
+    if (honeyVelocityChartInstance) honeyVelocityChartInstance.destroy();
+
+    const avg7DayData = labels.map(() => avg7Day);
+
+    honeyVelocityChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Earnings',
+                    data: earnData,
+                    backgroundColor: '#3b82f6',
+                    borderWidth: 0,
+                    borderRadius: 4
+                },
+                {
+                    label: 'Winnings',
+                    data: winData,
+                    backgroundColor: '#10b981',
+                    borderWidth: 0,
+                    borderRadius: 4
+                },
+                {
+                    type: 'line',
+                    label: '7-Day Avg',
+                    data: avg7DayData,
+                    borderColor: '#f59e0b',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+                tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleColor: '#fff', padding: 8 }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day', displayFormats: { day: 'MMM d' } },
+                    grid: { display: false },
+                    stacked: true
+                },
+                y: {
+                    stacked: true,
+                    grid: { color: 'rgba(255,255,255,0.03)' }
+                }
+            }
+        }
+    });
+}
+
+function renderHoneyMixChart(earnings, winnings) {
+    const ctx = document.getElementById('honeyMixChart').getContext('2d');
+    if (honeyMixChartInstance) honeyMixChartInstance.destroy();
+
+    const total = earnings + winnings;
+    const earnPct = total > 0 ? (earnings / total) * 100 : 0;
+    const winPct = total > 0 ? (winnings / total) * 100 : 0;
+
+    honeyMixChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Earnings', 'Winnings'],
+            datasets: [{
+                data: [earnings, winnings],
+                backgroundColor: ['#3b82f6', '#10b981'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    const legendContainer = document.getElementById('honey-mix-legend');
+    legendContainer.innerHTML = `
+        <div style="text-align: center;">
+            <div style="color: #3b82f6; font-weight: 700; font-size: 1.1rem;">${earnPct.toFixed(1)}%</div>
+            <div style="color: var(--text-muted);">Earnings</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="color: #10b981; font-weight: 700; font-size: 1.1rem;">${winPct.toFixed(1)}%</div>
+            <div style="color: var(--text-muted);">Winnings</div>
+        </div>
+    `;
 }
