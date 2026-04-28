@@ -603,9 +603,10 @@ function processAndRender(rawData) {
     document.getElementById('kpi-cash-ratio').textContent = `${fPct.format(stableRatio)}`;
 
     // --- APR TARGETING ---
-    // User wants 40% APR from APRs (Inflow WODL)
+    // APR = annualized yield / current portfolio market value (yield-on-value, not on cost basis)
+    // This is more realistic: it shows what % of your current wealth you're earning from DI yield.
     const annualYield = (grossInflowsForAvg / daysElapsed) * 365;
-    const aprBasis = finalAdjustedInvested > 0 ? (annualYield / finalAdjustedInvested) : 0;
+    const aprBasis = latest.totalValue > 0 ? (annualYield / latest.totalValue) : 0;
     const aprProgress = Math.min(100, (aprBasis / 0.40) * 100);
     
     const progressFill = document.getElementById('apr-progress-bar');
@@ -1000,8 +1001,10 @@ function calculateSmartAnalysis(data, latest, basis, daysElapsed, avgInflow) {
     });
 
     // 5. APR Breakdown
+    // Use current market value as denominator (yield-on-value), not cost basis.
+    // This keeps APR realistic and comparable regardless of DCA history.
     const annualYield = (avgInflow * 365);
-    const currAPR = basis > 0 ? (annualYield / basis) : 0;
+    const currAPR = latest.totalValue > 0 ? (annualYield / latest.totalValue) : 0;
     const aprGap = 0.40 - currAPR;
 
     document.getElementById('intel-curr-apr').textContent = fPct.format(currAPR);
